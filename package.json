@@ -13,7 +13,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test tests/**/*.test.mjs",
+    "test:contract": "node tests/shop-api.contract.mjs",
+    "test:e2e": "playwright test",
+    "test:shop": "node --test tests/shop-data.normalize.test.mjs && node tests/shop-api.contract.mjs && playwright test tests/e2e/shop.spec.js",
+    "test:plp": "node --test tests/shop-data.normalize.test.mjs && node tests/plp-api.contract.mjs && playwright test tests/e2e/plp.spec.js",
+    "test:cart": "node --test tests/cart-map.test.mjs tests/cart-errors.test.mjs && node tests/cart-api.contract.mjs && playwright test tests/e2e/cart.spec.js",
+    "test:auth": "node --test tests/auth-redirect.test.mjs && node tests/auth-api.contract.mjs && playwright test tests/e2e/auth.spec.js",
+    "test:account": "node --test tests/account-map.test.mjs && node tests/account-api.contract.mjs && playwright test tests/e2e/account.spec.js",
+    "test:checkout": "node --test tests/checkout-map.test.mjs tests/cart-errors.test.mjs && node tests/checkout-api.contract.mjs && playwright test tests/e2e/checkout.spec.js",
+    "test:lists": "node --test tests/lists-map.test.mjs && node tests/lists-api.contract.mjs && playwright test tests/e2e/lists.spec.js",
+    "test:m3": "node scripts/run-m3-regression.mjs",
+    "test:catalog": "npm run test:shop && npm run test:plp"
   },
   "dependencies": {
     "next": "16.2.4",
@@ -21,7 +33,10 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@tailwindcss/postcss": "^4.2.4",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4"
+    "eslint-config-next": "16.2.4",
+    "tailwindcss": "^4.2.4"
   }
 }
