@@ -8,7 +8,7 @@ import {
   writeAuthSession,
 } from "../authStorage.js";
 
-const DEFAULT_COMMERCE_BASE = "http://localhost:3001/v1";
+const DEFAULT_COMMERCE_BASE = "https://13.140.185.63:9053/v1";
 
 export function getCommerceApiBaseUrl() {
   const raw = process.env.NEXT_PUBLIC_COMMERCE_API_URL || DEFAULT_COMMERCE_BASE;
