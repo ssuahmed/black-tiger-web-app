@@ -106,7 +106,7 @@ export default function AccountListsClient() {
 
       <Card className="mb-6 p-4">
         <form className="flex flex-wrap items-end gap-3" onSubmit={handleCreate}>
-          <label className="flex min-w-[220px] flex-1 flex-col gap-1 text-sm">
+          <label className="flex min-w-0 w-full flex-1 flex-col gap-1 text-sm sm:min-w-[220px]">
             <span className="font-medium">New list</span>
             <input
               type="text"

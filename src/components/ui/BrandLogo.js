@@ -1,7 +1,12 @@
 import Image from "next/image";
 
 export default function BrandLogo({ className = "", variant = "header", priority = false }) {
-  const variantClass = variant === "hero" ? "brand-logo brand-logo--lg" : "brand-logo";
+  const variantClass =
+    variant === "hero"
+      ? "brand-logo brand-logo--lg"
+      : variant === "auth"
+        ? "brand-logo brand-logo--auth"
+        : "brand-logo";
 
   return (
     <Image

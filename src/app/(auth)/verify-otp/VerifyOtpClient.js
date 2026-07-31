@@ -97,11 +97,9 @@ export default function VerifyOtpClient() {
       title="Verify code"
       subtitle={identifier ? `We sent a code for ${identifier}` : "Enter the one-time code you received."}
       footer={
-        <span>
-          <Link href={routes.signIn} className="text-primary hover:underline">
-            Back to sign in
-          </Link>
-        </span>
+        <Link href={routes.signIn} className="text-primary hover:underline">
+          Back to sign in
+        </Link>
       }
     >
       {!ready ? (
@@ -115,13 +113,13 @@ export default function VerifyOtpClient() {
               No challenge id in session storage. Complete the previous step or paste values saved during sign-in / reset.
             </Alert>
           ) : null}
-          <FormField id="cid" label="Challenge id (optional override)" hint="Filled from sessionStorage when available.">
+          <FormField id="cid" label="Challenge id (optional override)" hint="Filled from sessionStorage when available." variant="outlined">
             <Input id="cid" value={challengeId} onChange={(e) => setChallengeId(e.target.value)} autoComplete="off" />
           </FormField>
           <Button type="button" variant="outline" className="w-full" onClick={onManualChallenge}>
             Save challenge to session
           </Button>
-          <FormField id="purpose" label="Purpose">
+          <FormField id="purpose" label="Purpose" variant="outlined">
             <select
               id="purpose"
               className="select-field"
@@ -141,7 +139,7 @@ export default function VerifyOtpClient() {
               {error}
             </Alert>
           ) : null}
-          <Button type="submit" className="w-full btn-primary" disabled={busy}>
+          <Button type="submit" className="btn-auth" disabled={busy || code.replace(/\D/g, "").length !== 6}>
             {busy ? <Spinner size="sm" /> : "Verify"}
           </Button>
           <Button

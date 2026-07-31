@@ -41,6 +41,29 @@ export function packagingUnitPriceLabel(options, id) {
   return "";
 }
 
+/**
+ * Pallet tier tables for the selected packaging variant.
+ *
+ * Variant pricing is authoritative: when the selected packaging carries its own pricing,
+ * a missing tier means that variant has no such tier, so the product template tables must
+ * not be substituted (that made the tables look frozen when switching variants).
+ *
+ * @param {unknown} packagingPricing pricing of the selected packaging option
+ * @param {unknown} livePricing merged quote pricing, used when the option has no pricing
+ */
+export function scopePalletTables(packagingPricing, livePricing) {
+  const scoped =
+    packagingPricing && typeof packagingPricing === "object"
+      ? /** @type {Record<string, unknown>} */ (packagingPricing)
+      : livePricing && typeof livePricing === "object"
+        ? /** @type {Record<string, unknown>} */ (livePricing)
+        : {};
+  return {
+    partialPallet: scoped.partialPallet ?? null,
+    fullPallet: scoped.fullPallet ?? null,
+  };
+}
+
 /** @param {unknown} quote @param {unknown} fallback */
 export function mergeQuotePricing(quote, fallback) {
   const q = quote && typeof quote === "object" ? /** @type {Record<string, unknown>} */ (quote) : {};

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui";
 import { useProductPriceQuote } from "@/hooks/useProductPriceQuote";
@@ -56,6 +57,7 @@ function ProductBadges({ badges, compact }) {
 
 /** @param {{ product: Record<string, unknown> }} props */
 function ShopProductCard({ product }) {
+  const router = useRouter();
   const p = normalizeProduct(product);
   const options = useMemo(
     () =>
@@ -94,7 +96,19 @@ function ShopProductCard({ product }) {
     p.priceText;
 
   return (
-    <article className="relative box-border grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-5 gap-y-4 border border-neutral-200 border-t-[3px] border-t-primary bg-white p-4 pe-4 sm:grid-cols-[clamp(6rem,18vw,9.5rem)_minmax(0,1fr)] sm:pe-5">
+    <article
+      role="link"
+      tabIndex={0}
+      aria-label={`View ${p.name}`}
+      className="relative box-border grid cursor-pointer grid-cols-[5.5rem_minmax(0,1fr)] gap-x-5 gap-y-4 border border-neutral-200 border-t-[3px] border-t-primary bg-white p-4 pe-4 transition-[border-color,box-shadow] hover:border-primary/45 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 sm:grid-cols-[clamp(6rem,18vw,9.5rem)_minmax(0,1fr)] sm:pe-5"
+      onClick={() => router.push(p.href)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(p.href);
+        }
+      }}
+    >
       <div className="relative row-span-2 aspect-4/5 max-h-40 w-full self-center bg-neutral-100">
         <Image src={p.imgSrc} alt={p.imgAlt} fill sizes="160px" className="object-contain p-2" unoptimized />
       </div>
@@ -120,7 +134,11 @@ function ShopProductCard({ product }) {
                     "cursor-pointer border px-2 py-1 text-[10px] font-medium tracking-wide uppercase transition-colors",
                     active ? "border-primary bg-primary/5 text-primary" : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400",
                   )}
-                  onClick={() => setPackagingOptionId(id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setPackagingOptionId(id);
+                  }}
+                  onKeyDown={(event) => event.stopPropagation()}
                 >
                   {String(opt.label ?? id)}
                 </button>
@@ -133,18 +151,20 @@ function ShopProductCard({ product }) {
             {displayPrice}
           </p>
         ) : null}
+        <Link
+          href={p.href}
+          className="mt-1 w-fit text-sm font-semibold text-neutral-900 no-underline hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          View
+        </Link>
       </div>
       {p.cat ? (
         <span className="static mt-1 self-start bg-neutral-200 px-2 py-1 text-xs font-bold tracking-wide text-neutral-900 uppercase sm:absolute sm:top-4 sm:right-5 sm:mt-0">
           {p.cat}
         </span>
       ) : null}
-      <Link
-        href={p.href}
-        className="static mt-2 justify-self-start text-sm font-semibold text-neutral-900 no-underline hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 sm:absolute sm:right-5 sm:bottom-4 sm:mt-0"
-      >
-        View
-      </Link>
     </article>
   );
 }
@@ -158,17 +178,22 @@ export default function ProductCard({ product, variant = "listing" }) {
   }
 
   if (variant === "compact") {
+    const badgeLabel = p.badges.length ? p.badges[0] : null;
     return (
-      <Link
-        href={p.href}
-        className="relative flex flex-col border border-neutral-200 bg-white p-4 text-inherit no-underline transition-[border-color,box-shadow] duration-150 hover:border-neutral-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
-      >
-        <ProductBadges badges={p.badges} compact />
-        <div className="relative mb-3 aspect-3/4 w-full">
-          <Image src={p.imgSrc} alt={p.imgAlt} fill sizes="(max-width:768px) 45vw, 220px" className="object-contain p-2" unoptimized />
+      <Link href={p.href} className="pdp-card">
+        {badgeLabel ? <span className="pdp-card__badge">{badgeLabel}</span> : null}
+        <div className="pdp-card__media">
+          <Image
+            src={p.imgSrc}
+            alt={p.imgAlt}
+            fill
+            sizes="(max-width:768px) 45vw, 300px"
+            className="object-contain"
+            unoptimized
+          />
         </div>
-        <h3 className="m-0 text-xs leading-snug font-semibold text-neutral-900">{p.name}</h3>
-        {p.priceText ? <p className="mt-1.5 mb-0 text-sm font-semibold text-primary">{p.priceText}</p> : null}
+        <h3 className="pdp-card__name">{p.name}</h3>
+        {p.priceText ? <p className="pdp-card__price">{p.priceText}</p> : null}
       </Link>
     );
   }

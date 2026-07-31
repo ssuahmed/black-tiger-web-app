@@ -46,18 +46,30 @@ export async function generateMetadata(props) {
   return { title: "Product | Black Tiger" };
 }
 
-/** @param {{ params: Promise<{ slug: string }> }} props */
+/** @param {{ params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }} props */
 export default async function ProductSlugPage(props) {
   const { slug } = await props.params;
+  const searchParams = await props.searchParams;
 
   const category = await tryCategory(slug);
   if (category) {
+    /** @type {Record<string, string | string[]>} */
+    const taxonomy = {};
+    for (const key of ["segmentApplication", "application", "viscosity", "productLine", "segment"]) {
+      const raw = searchParams[key];
+      if (Array.isArray(raw) && raw.length) taxonomy[key] = raw.map(String);
+      else if (typeof raw === "string" && raw.trim()) taxonomy[key] = raw.trim();
+    }
+    const q = typeof searchParams.q === "string" ? searchParams.q.trim() : "";
+
     const [productPayload, categoriesPayload] = await Promise.all([
       listProducts({
         category: slug,
         pageSize: PLP_PAGE_SIZE,
         view: "list",
         sort: "relevance",
+        ...(q ? { q } : {}),
+        ...taxonomy,
       }).catch(() => null),
       listCategories().catch(() => null),
     ]);
@@ -65,10 +77,17 @@ export default async function ProductSlugPage(props) {
     const initialProducts = normalizeProductList(productPayload);
     const dataSource = catalogDataSource(categoriesPayload) ?? catalogDataSource(productPayload);
 
+    /** @type {Record<string, string[]>} */
+    const initialFilters = {};
+    for (const [key, val] of Object.entries(taxonomy)) {
+      initialFilters[key] = Array.isArray(val) ? val.map(String) : [String(val)];
+    }
+
     return (
       <ProductListingClient
         categorySlug={slug}
         initialProducts={initialProducts}
+        initialFilters={initialFilters}
         dataSource={dataSource}
       />
     );

@@ -10,6 +10,7 @@ export { default as FormField } from "./FormField";
 export { default as Input } from "./Input";
 export { default as Modal } from "./Modal";
 export { default as OtpInput } from "./OtpInput";
+export { default as PasswordInput } from "./PasswordInput";
 export { default as SegmentedControl } from "./SegmentedControl";
 export { default as Select } from "./Select";
 export { default as Skeleton } from "./Skeleton";

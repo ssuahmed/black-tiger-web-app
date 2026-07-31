@@ -23,10 +23,10 @@ export default function ApplicationAccordion({ categories = HOME_APPLICATION_ACC
 
   return (
     <div
-      className="bg-white py-[clamp(2.5rem,calc(100vw*72/var(--design-canvas)),4.5rem)] text-[#4a4a4a]"
+      className="bg-white px-[var(--page-gutter-x)] py-[clamp(2.5rem,calc(100vw*72/var(--design-canvas)),4.5rem)] text-[#4a4a4a]"
       aria-label="Browse by application"
     >
-      <div className="m-0 p-0">
+      <div className="m-0 mx-auto max-w-[min(1920px,100%)] p-0">
         {categories.map((category, index) => {
           const isOpen = openIds.has(category.id);
           const panelId = `${baseId}-panel-${category.id}`;
@@ -37,7 +37,7 @@ export default function ApplicationAccordion({ categories = HOME_APPLICATION_ACC
             <article
               key={category.id}
               className={cn(
-              "border-t border-[#e0e0e0] pe-5",
+                "border-t border-[#e0e0e0]",
                 isOpen && "bg-[#f2f2f2]",
                 isLast && "border-b border-[#e0e0e0]",
               )}
@@ -52,11 +52,7 @@ export default function ApplicationAccordion({ categories = HOME_APPLICATION_ACC
                   onClick={() => toggle(category.id)}
                 >
                   <span className="block h-[3px] w-[clamp(2rem,calc(100vw*48/var(--design-canvas)),3rem)] shrink-0 bg-primary" aria-hidden />
-                  <span
-                    className={cn(
-                      "font-magistral text-lg font-bold uppercase leading-[1.2] tracking-[0.06em] text-[#4a4a4a]",
-                    )}
-                  >
+                  <span className="font-magistral text-base font-bold uppercase leading-[1.2] tracking-[0.06em] text-[#4a4a4a] sm:text-lg">
                     {category.title}
                   </span>
                   <ChevronIcon open={isOpen} className="bg-[#b3b3b3]" />
@@ -68,17 +64,17 @@ export default function ApplicationAccordion({ categories = HOME_APPLICATION_ACC
                 role="region"
                 aria-labelledby={triggerId}
                 hidden={!isOpen}
-                className="pb-[clamp(1.25rem,calc(100vw*40/var(--design-canvas)),2rem)] ps-20"
+                className="pb-[clamp(1.25rem,calc(100vw*40/var(--design-canvas)),2rem)] ps-0 sm:ps-8 md:ps-12 lg:ps-20"
               >
-                <ul className="m-0 flex list-none flex-wrap items-start justify-start gap-3.5 p-0">
+                <ul className="m-0 flex list-none flex-wrap items-start justify-start gap-2.5 p-0 sm:gap-3.5">
                   {category.applications.map((app) => (
                     <li key={app.slug} className="shrink-0 grow-0 basis-auto">
                       <Link
                         href={applicationHref(category, app)}
-                        className="box-border flex h-[150px] w-[150px] flex-col items-center justify-center gap-2.5 border border-[#f5c2c7] bg-white px-2 py-3 text-inherit no-underline transition-[border-color,box-shadow] duration-150 hover:border-[#eeb8be] hover:shadow-[0_1px_4px_rgba(233,1,6,0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        className="box-border flex h-[7.25rem] w-[7.25rem] flex-col items-center justify-center gap-2 border border-[#f5c2c7] bg-white px-1.5 py-2 text-inherit no-underline transition-[border-color,box-shadow] duration-150 hover:border-[#eeb8be] hover:shadow-[0_1px_4px_rgba(233,1,6,0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:h-[150px] sm:w-[150px] sm:gap-2.5 sm:px-2 sm:py-3"
                       >
-                        <CategoryApplicationIcon name={app.icon} className="h-[3.25rem] w-[3.25rem] shrink-0 text-black" />
-                        <span className="block max-w-full px-0.5 text-center text-xs font-medium uppercase leading-[1.25] tracking-[0.04em] text-[#808080]">
+                        <CategoryApplicationIcon name={app.icon} className="h-10 w-10 shrink-0 text-black sm:h-[3.25rem] sm:w-[3.25rem]" />
+                        <span className="block max-w-full px-0.5 text-center text-[0.65rem] font-medium uppercase leading-[1.25] tracking-[0.04em] text-[#808080] sm:text-xs">
                           {app.label}
                         </span>
                       </Link>

@@ -9,13 +9,7 @@ function ProductPanel({ panel }) {
   const isQuality = panel.variant === "quality";
 
   return (
-    <article
-      className={cn(
-        "relative box-border h-full min-h-0 overflow-hidden",
-        "border-b border-white sm:border-r sm:border-b-0 sm:even:border-r-0",
-        "lg:border-r lg:even:border-r lg:last:border-r-0",
-      )}
-    >
+    <article className="relative box-border h-full min-h-0 overflow-hidden">
       <div
         className={cn(
           "pointer-events-none absolute inset-0 bg-black bg-center bg-no-repeat",
@@ -29,23 +23,23 @@ function ProductPanel({ panel }) {
 
       <div
         className={cn(
-          "relative z-[1] flex h-full min-h-0 flex-col justify-between",
-          "p-2 sm:p-3",
+          "relative z-[1] flex h-full min-h-0 flex-col",
+          "p-2.5 sm:p-3",
           "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-end lg:gap-2 lg:p-4",
         )}
       >
         <div
           className={cn(
-            "flex flex-col items-start justify-start gap-[clamp(0.75rem,calc(100vw*20/1920),1.25rem)]",
-            isQuality && "justify-center self-center",
+            "flex shrink-0 flex-col items-start justify-start gap-1.5 lg:gap-[clamp(0.75rem,calc(100vw*20/1920),1.25rem)]",
+            isQuality && "lg:justify-center lg:self-center",
           )}
         >
           <h2
             className={cn(
               "m-0 font-bold leading-[1.05] tracking-[0.01em]",
               isQuality
-                ? "text-[clamp(1.75rem,calc(100vw*44/1440),1.75rem)] leading-[1.08] text-black"
-                : "text-[clamp(2rem,calc(100vw*56/1440),2.75rem)] text-white italic",
+                ? "text-[clamp(1.125rem,4vw,1.75rem)] leading-[1.08] text-black"
+                : "text-[clamp(1.25rem,4.5vw,2.75rem)] text-white italic",
             )}
           >
             {isQuality ? (
@@ -61,21 +55,21 @@ function ProductPanel({ panel }) {
           {panel.showReadMore !== false ? (
             <Link
               href={panel.href}
-              className="inline-block border-b border-white pb-0.5 text-[clamp(0.875rem,calc(100vw*18/1920),1.125rem)] leading-[1.2] font-normal text-white italic no-underline transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              className="inline-block border-b border-white pb-0.5 text-[clamp(0.75rem,calc(100vw*18/1920),1.125rem)] leading-[1.2] font-normal text-white italic no-underline transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
             >
               Read more...
             </Link>
           ) : null}
         </div>
 
-        <div className="flex items-end justify-center self-end">
+        <div className="flex min-h-0 flex-1 items-end justify-center pt-2 lg:flex-none lg:self-end lg:pt-0">
           <Image
             src={panel.productImage}
             alt={panel.productAlt}
             width={isQuality ? 420 : 280}
             height={isQuality ? 320 : 380}
             className={cn(
-              "h-auto w-auto max-h-[45%] max-w-full object-contain",
+              "h-full max-h-full w-auto max-w-full object-contain lg:h-auto lg:max-h-[45%]",
               isQuality ? "object-bottom-right" : "object-bottom",
             )}
             sizes="(max-width: 1024px) 50vw, 25vw"
@@ -88,13 +82,16 @@ function ProductPanel({ panel }) {
   );
 }
 
-/** Homepage section 2 — product strip after hero */
+/** Homepage section 2 — product strip after hero (2×2 on mobile, 4×1 on desktop) */
 export default function HomeProductStrip({ panels = HOME_PRODUCT_STRIP }) {
   if (!panels?.length) return null;
 
   return (
-    <section className="h-[20vh] w-full max-w-full bg-black" aria-label="Featured product lines" style={{marginTop: "4px"}}>
-      <div className="grid h-full w-full grid-cols-1 grid-rows-4 sm:grid-cols-2 sm:grid-rows-2 lg:grid-cols-4 lg:grid-rows-1">
+    <section
+      className="mt-1 w-full max-w-full bg-white lg:h-[min(28vh,20rem)]"
+      aria-label="Featured product lines"
+    >
+      <div className="grid h-full w-full auto-rows-[minmax(14rem,1fr)] grid-cols-2 gap-px bg-white sm:auto-rows-[minmax(17rem,1fr)] lg:auto-rows-fr lg:grid-cols-4 lg:grid-rows-1">
         {panels.map((panel) => (
           <ProductPanel key={panel.id} panel={panel} />
         ))}

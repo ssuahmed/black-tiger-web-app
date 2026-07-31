@@ -49,6 +49,10 @@ export function normalizeShippingRecommendation(recommendation) {
     recommendation.efficiency && typeof recommendation.efficiency === "object"
       ? recommendation.efficiency
       : {};
+  const palletBreakdown =
+    recommendation.palletBreakdown && typeof recommendation.palletBreakdown === "object"
+      ? recommendation.palletBreakdown
+      : null;
   return {
     score: Number(efficiency.score ?? recommendation.utilizationPct ?? 0),
     utilizationPct: Number(efficiency.utilizationPct ?? efficiency.score ?? 0),
@@ -60,6 +64,7 @@ export function normalizeShippingRecommendation(recommendation) {
     suggestedProducts: Array.isArray(recommendation.suggestedProducts)
       ? recommendation.suggestedProducts
       : [],
+    palletBreakdown,
   };
 }
 
@@ -68,9 +73,13 @@ export function normalizeCheckoutTotals(summary) {
   const totals = summary?.totals && typeof summary.totals === "object" ? summary.totals : {};
   return {
     subtotal: Number(totals.subtotal ?? 0),
+    discount: Number(totals.discount ?? 0),
+    vat: Number(totals.vat ?? 0),
     shipping: Number(totals.shipping ?? 0),
     grandTotal: Number(totals.grandTotal ?? 0),
     formattedSubtotal: String(totals.formattedSubtotal ?? ""),
+    formattedDiscount: String(totals.formattedDiscount ?? ""),
+    formattedVat: String(totals.formattedVat ?? ""),
     formattedShipping: String(totals.formattedShipping ?? ""),
     formattedGrandTotal: String(totals.formattedGrandTotal ?? ""),
     itemCount: Number(totals.itemCount ?? 0),

@@ -2,7 +2,8 @@ import { routes } from "@/lib/routes";
 
 /**
  * Homepage application accordion — aligned with Figma `homepage.jpg`.
- * Links route to PLP; `application` query reserved for future facet filtering.
+ * Links route to PLP with category (segment) + `application` facet.
+ * Product templates must include matching `bt_application_tags` in Odoo.
  */
 
 /** @typedef {{ slug: string; label: string; icon: string }} ApplicationItem */

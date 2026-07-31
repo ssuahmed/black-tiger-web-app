@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AuthCard from "@/components/auth/AuthCard";
-import { Alert, Button, FormField, Input, Spinner } from "@/components/ui";
+import PasswordRequirements from "@/components/auth/PasswordRequirements";
+import { Alert, Button, FormField, PasswordInput, Spinner } from "@/components/ui";
 import { CommerceApiError } from "@/lib/api/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePasswordPolicy } from "@/hooks/usePasswordPolicy";
 import * as authApi from "@/lib/api/auth";
+import { passwordMeetsPolicy } from "@/lib/passwordRules";
 import { routes } from "@/lib/routes";
 
 export default function ResetPasswordClient() {
@@ -24,6 +26,16 @@ export default function ResetPasswordClient() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [tokenValid, setTokenValid] = useState(null);
+
+  const ready = useMemo(() => {
+    return (
+      passwordMeetsPolicy(password, policy.rules) &&
+      password === confirmPassword &&
+      confirmPassword.length > 0 &&
+      Boolean(resetToken || resetSessionToken) &&
+      tokenValid !== false
+    );
+  }, [password, confirmPassword, policy.rules, resetToken, resetSessionToken, tokenValid]);
 
   useEffect(() => {
     const q = searchParams.get("token");
@@ -58,8 +70,8 @@ export default function ResetPasswordClient() {
     e.preventDefault();
     setError("");
     setInfo("");
-    if (password.length < 8) {
-      setError(policy.hint || "Password must be at least 8 characters.");
+    if (!passwordMeetsPolicy(password, policy.rules)) {
+      setError(policy.hint || "Password does not meet the requirements.");
       return;
     }
     if (password !== confirmPassword) {
@@ -96,7 +108,6 @@ export default function ResetPasswordClient() {
   return (
     <AuthCard
       title="Set a new password"
-      subtitle="Choose a strong password you have not used before on this site."
       footer={
         <Link href={routes.signIn} className="text-primary hover:underline">
           Back to sign in
@@ -110,12 +121,27 @@ export default function ResetPasswordClient() {
         {!resetToken && !resetSessionToken ? (
           <Alert variant="info">Open the link from your email or complete OTP verification first.</Alert>
         ) : null}
-        <FormField id="rpw" label="New password" hint={policy.hint} required>
-          <Input id="rpw" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy} />
+        <FormField id="rpw" label="New Password" required variant="outlined">
+          <PasswordInput
+            id="rpw"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="New Password"
+            disabled={busy}
+          />
         </FormField>
-        <FormField id="rpw2" label="Confirm password" required>
-          <Input id="rpw2" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={busy} />
+        <FormField id="rpw2" label="Confirm new password" required variant="outlined">
+          <PasswordInput
+            id="rpw2"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm new password"
+            disabled={busy}
+          />
         </FormField>
+        <PasswordRequirements password={password} rules={policy.rules} />
         {info ? (
           <Alert variant="success" role="status">
             {info}
@@ -126,7 +152,7 @@ export default function ResetPasswordClient() {
             {error}
           </Alert>
         ) : null}
-        <Button type="submit" className="w-full btn-primary" disabled={busy}>
+        <Button type="submit" className="btn-auth" disabled={busy || !ready}>
           {busy ? <Spinner size="sm" /> : "Update password"}
         </Button>
       </form>

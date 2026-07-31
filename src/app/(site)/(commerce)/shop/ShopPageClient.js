@@ -65,6 +65,7 @@ function ShopPageInner({
 }) {
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category");
+  const searchQuery = searchParams.get("q")?.trim() || "";
 
   const [categoryTree, setCategoryTree] = useState(initialCategories);
   const [pageData, setPageData] = useState(initialProducts);
@@ -115,16 +116,17 @@ function ShopPageInner({
       if (selectedCategory) {
         params.category = selectedCategory;
       }
+      if (searchQuery) params.q = searchQuery;
       if (cursorVal) params.cursor = cursorVal;
       for (const [key, vals] of Object.entries(filters)) {
         if (vals.length) params[key] = vals;
       }
       return params;
     },
-    [selectedCategory, filters],
+    [selectedCategory, filters, searchQuery],
   );
 
-  const isDefaultQuery = !selectedCategory && Object.keys(filters).length === 0;
+  const isDefaultQuery = !selectedCategory && Object.keys(filters).length === 0 && !searchQuery;
 
   useEffect(() => {
     if (initialCategories) return;
@@ -151,7 +153,7 @@ function ShopPageInner({
 
   useEffect(() => {
     const shouldUseServerSnapshot =
-      skipInitialFetchRef.current && isDefaultQuery && !categoryFromUrl;
+      skipInitialFetchRef.current && isDefaultQuery && !categoryFromUrl && !searchQuery;
     if (shouldUseServerSnapshot) {
       skipInitialFetchRef.current = false;
       setLoading(false);
@@ -178,7 +180,7 @@ function ShopPageInner({
     return () => {
       alive = false;
     };
-  }, [buildParams, isDefaultQuery, categoryFromUrl]);
+  }, [buildParams, isDefaultQuery, categoryFromUrl, searchQuery]);
 
   const toggleFacet = useCallback((facetKey, value, checked) => {
     setFilters((prev) => {
@@ -208,7 +210,10 @@ function ShopPageInner({
   const clearAllFilters = useCallback(() => {
     setFilters({});
     setSelectedCategory(null);
-  }, []);
+    if (searchQuery && typeof window !== "undefined") {
+      window.location.assign("/shop");
+    }
+  }, [searchQuery]);
 
   const selectCategory = useCallback((slug) => {
     setSelectedCategory(slug);
@@ -266,8 +271,8 @@ function ShopPageInner({
       }
       footer={
         !loading && items.length > 0 ? (
-          <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-            <p className="m-0 text-sm text-neutral-600">
+          <div className="mt-8 grid grid-cols-1 items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
+            <p className="m-0 text-center text-sm text-neutral-600 sm:text-start">
               {loadedCount} of {totalResults} Results
               {liveSource === "odoo" ? (
                 <span className="sr-only"> (live catalog)</span>
@@ -275,7 +280,7 @@ function ShopPageInner({
             </p>
             <button
               type="button"
-              className="inline-flex min-w-40 cursor-pointer items-center justify-center border border-primary bg-white px-8 py-2.5 text-xs font-bold tracking-wide text-primary uppercase transition-colors duration-150 hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-w-40 cursor-pointer items-center justify-center justify-self-center border border-primary bg-white px-8 py-2.5 text-xs font-bold tracking-wide text-primary uppercase transition-colors duration-150 hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               disabled={!hasMore || loadingMore}
               onClick={() => void loadMore()}
             >
@@ -283,7 +288,7 @@ function ShopPageInner({
             </button>
             <button
               type="button"
-              className="inline-flex cursor-pointer items-center gap-1.5 justify-self-end border-none bg-transparent p-0 text-xs text-neutral-600 hover:text-primary"
+              className="inline-flex cursor-pointer items-center gap-1.5 justify-self-center border-none bg-transparent p-0 text-xs text-neutral-600 hover:text-primary sm:justify-self-end"
               onClick={scrollToTop}
             >
               Back to top
@@ -298,6 +303,14 @@ function ShopPageInner({
         ) : null
       }
     >
+      {searchQuery ? (
+        <p className="mb-4 text-sm text-neutral-600">
+          Results for “{searchQuery}” ·{" "}
+          <a href="/shop" className="text-primary hover:underline">
+            Clear search
+          </a>
+        </p>
+      ) : null}
       {error ? (
         <Alert variant="error" className="mb-4">
           {error}
@@ -309,14 +322,16 @@ function ShopPageInner({
         <EmptyState
           title="No products found"
           description={
-            selectedCategory
-              ? "No products in this category yet. Try All products or another category."
-              : liveSource === "odoo"
-                ? "The catalog is empty. Check that Odoo seed modules are installed."
-                : "Unable to load products. Ensure the Commerce API is running with ODOO_MODE=live."
+            searchQuery
+              ? `No products match “${searchQuery}”. Try another term or browse categories.`
+              : selectedCategory
+                ? "No products in this category yet. Try All products or another category."
+                : liveSource === "odoo"
+                  ? "The catalog is empty. Check that Odoo seed modules are installed."
+                  : "Unable to load products. Ensure the Commerce API is running with ODOO_MODE=live."
           }
           action={
-            selectedCategory || Object.keys(filters).length > 0 ? (
+            selectedCategory || Object.keys(filters).length > 0 || searchQuery ? (
               <button type="button" className="btn btn-primary" onClick={clearAllFilters}>
                 Show all products
               </button>

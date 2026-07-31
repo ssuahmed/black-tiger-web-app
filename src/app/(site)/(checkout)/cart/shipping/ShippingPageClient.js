@@ -14,6 +14,8 @@ import { useCheckoutStepGuard } from "@/hooks/useCheckoutStepGuard";
 import { useCommerceCart } from "@/hooks/useCommerceCart";
 import { CommerceApiError } from "@/lib/api/client";
 import * as checkoutApi from "@/lib/api/checkout";
+import { mapApiLogistics } from "@/lib/cart/mapApiCart.mjs";
+import { formatSarSymbol } from "@/lib/format/money";
 import {
   normalizeShippingOption,
   normalizeShippingRecommendation,
@@ -31,7 +33,7 @@ export default function ShippingPageClient() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const { lines, totals, ready, isEmpty } = useCommerceCart();
+  const { lines, totals, logistics, ready, isEmpty } = useCommerceCart();
   const { canRender } = useCheckoutAuth("/cart/shipping");
   const { shouldRender, summary, summaryLoading } = useCheckoutStepGuard({
     step: "shipping",
@@ -45,16 +47,23 @@ export default function ShippingPageClient() {
     return normalizeShippingOption(row && typeof row === "object" ? row : {});
   }, [shippingOpts, shippingOptionId]);
 
-  const shippingTotals = useMemo(
-    () => ({
+  const shippingTotals = useMemo(() => {
+    const shipping = selectedShipping.priceAmount;
+    const discount = Number(totals.discount || 0);
+    const vat = Number(totals.vat || Math.round((totals.subtotal - discount) * 0.15 * 100) / 100);
+    const grandTotal = totals.subtotal - discount + vat + shipping;
+    return {
       ...totals,
-      shipping: selectedShipping.priceAmount,
-      totalInclVat: totals.subtotal + selectedShipping.priceAmount,
-      formattedShipping: selectedShipping.priceFormatted || totals.formattedShipping,
-      formattedTotalInclVat: formatTotal(totals.subtotal + selectedShipping.priceAmount),
-    }),
-    [totals, selectedShipping],
-  );
+      shipping,
+      vat,
+      grandTotal,
+      totalInclVat: grandTotal,
+      formattedShipping: selectedShipping.priceFormatted || formatSarSymbol(shipping),
+      formattedVat: formatSarSymbol(vat),
+      formattedGrandTotal: formatSarSymbol(grandTotal),
+      formattedTotalInclVat: formatSarSymbol(grandTotal),
+    };
+  }, [totals, selectedShipping]);
 
   const shippingMethods = useMemo(
     () => shippingOpts.map((row) => normalizeShippingOption(row && typeof row === "object" ? row : {})),
@@ -71,6 +80,18 @@ export default function ShippingPageClient() {
       ),
     [recommendation, summary?.shippingRecommendation],
   );
+
+  const sidebarLogistics = useMemo(() => {
+    if (normalizedRecommendation?.palletBreakdown) {
+      return mapApiLogistics(normalizedRecommendation.palletBreakdown);
+    }
+    if (summary?.logistics) return mapApiLogistics(summary.logistics);
+    return logistics;
+  }, [normalizedRecommendation, summary?.logistics, logistics]);
+
+  useEffect(() => {
+    if (summary?.orderNotes) setOrderNote(String(summary.orderNotes));
+  }, [summary?.orderNotes]);
 
   useEffect(() => {
     if (!activeCartId || !canRender) return;
@@ -116,7 +137,10 @@ export default function ShippingPageClient() {
     setBusy(true);
     setError("");
     try {
-      await checkoutApi.setCheckoutShipping(activeCartId, { shippingOptionId });
+      await checkoutApi.setCheckoutShipping(activeCartId, {
+        shippingOptionId,
+        orderNotes: orderNote || undefined,
+      });
       router.push("/cart/payment");
     } catch (err) {
       const msg = err instanceof CommerceApiError ? err.message : "Could not save shipping.";
@@ -133,6 +157,7 @@ export default function ShippingPageClient() {
           variant="shipping"
           lines={lines}
           totals={shippingTotals}
+          logistics={sidebarLogistics}
           ctaLabel="Next"
           onCtaClick={continueToPayment}
           ctaDisabled={busy || !shippingOptionId}
@@ -146,10 +171,12 @@ export default function ShippingPageClient() {
             etaDays: m.etaDays,
           }))}
           selectedShippingId={shippingOptionId}
+          efficiencyScore={normalizedRecommendation?.score ?? null}
+          recommendationMessage={normalizedRecommendation?.message || null}
         />
       }
     >
-      <CheckoutStepTitle step="3" title="Shipping" continueHref="/cart/address" />
+      <CheckoutStepTitle step="3" title="Shipping (Local shipping)" continueHref="/cart/address" />
       {error ? (
         <Alert variant="error" className="mb-4">
           {error}
@@ -179,7 +206,7 @@ export default function ShippingPageClient() {
                 <span>
                   {method.label}
                   {method.recommended ? (
-                    <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    <span className="ml-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
                       Recommended
                     </span>
                   ) : null}
@@ -200,9 +227,4 @@ export default function ShippingPageClient() {
       </div>
     </CheckoutLayout>
   );
-}
-
-/** @param {number} amount */
-function formatTotal(amount) {
-  return `\uFDFC ${amount.toLocaleString("en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

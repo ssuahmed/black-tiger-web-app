@@ -21,7 +21,7 @@ export default function AddressPageClient() {
   const { user } = useAuth();
   const { cart, cartId: sessionCartId } = useCart();
   const activeCartId = cart?.id ?? sessionCartId;
-  const { lines, totals, ready, isEmpty } = useCommerceCart();
+  const { lines, totals, logistics, promo, ready, isEmpty, refreshCart } = useCommerceCart();
   const { canRender, isAuthenticated, ready: authReady } = useCheckoutAuth("/cart/address");
   const { shouldRender } = useCartStepGuard({
     ready: ready && authReady && isAuthenticated,
@@ -59,15 +59,27 @@ export default function AddressPageClient() {
   return (
     <CheckoutLayout
       formLayout
-      sidebar={<CartOrderSummary variant="compact" lines={lines} totals={totals} />}
+      preset="checkoutForm"
+      className="co-address-page"
+      top={<CheckoutStepTitle step="2" title="Your Address" variant="address" showContinue={false} />}
+      sidebar={
+        <CartOrderSummary
+          variant="compact"
+          lines={lines}
+          totals={totals}
+          logistics={logistics}
+          promo={promo}
+          cartId={activeCartId}
+          onPromoChanged={refreshCart}
+        />
+      }
     >
-      <CheckoutStepTitle step="2" title="Your Address" continueHref="/cart" />
       {error ? (
         <Alert variant="error" className="mb-4">
           {error}
         </Alert>
       ) : null}
-      <AddressForm onSubmit={handleSubmit} submitLabel="Continue to shipping" busy={busy} />
+      <AddressForm onSubmit={handleSubmit} busy={busy} />
     </CheckoutLayout>
   );
 }

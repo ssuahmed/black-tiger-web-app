@@ -31,3 +31,16 @@ export function removeCartItem(cartId, lineId) {
 export function deleteCart(cartId) {
   return commerceFetch(`cart/${encodeURIComponent(cartId)}`, { method: "DELETE" });
 }
+
+export function applyCartPromo(cartId, code) {
+  return commerceFetch(`cart/${encodeURIComponent(cartId)}/promo`, {
+    method: "PUT",
+    json: { code },
+  });
+}
+
+export function removeCartPromo(cartId) {
+  return commerceFetch(`cart/${encodeURIComponent(cartId)}/promo`, {
+    method: "DELETE",
+  });
+}

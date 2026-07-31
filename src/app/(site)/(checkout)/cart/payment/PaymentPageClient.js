@@ -13,16 +13,20 @@ import { useCheckoutStepGuard } from "@/hooks/useCheckoutStepGuard";
 import { useCommerceCart } from "@/hooks/useCommerceCart";
 import { CommerceApiError } from "@/lib/api/client";
 import * as checkoutApi from "@/lib/api/checkout";
+import { createQuote } from "@/lib/api/quotes";
 import { normalizeCheckoutTotals } from "@/lib/checkout/mapCheckout.mjs";
+import { formatApiError } from "@/lib/formatApiError";
 import { routes } from "@/lib/routes";
 
 export default function PaymentPageClient() {
-  const { cart, cartId: sessionCartId, clearCart } = useCart();
+  const { cart, cartId: sessionCartId, clearCart, refreshCart } = useCart();
   const activeCartId = cart?.id ?? sessionCartId;
-  const { lines, totals, ready, isEmpty } = useCommerceCart();
+  const { lines, totals, logistics, promo, ready, isEmpty } = useCommerceCart();
   const { canRender } = useCheckoutAuth("/cart/payment");
   const [busy, setBusy] = useState(false);
+  const [quoteBusy, setQuoteBusy] = useState(false);
   const [error, setError] = useState("");
+  const [quoteMessage, setQuoteMessage] = useState("");
   const [done, setDone] = useState(null);
   const { shouldRender, summary, summaryLoading } = useCheckoutStepGuard({
     step: "payment",
@@ -33,16 +37,26 @@ export default function PaymentPageClient() {
   });
 
   const checkoutTotals = useMemo(() => normalizeCheckoutTotals(summary), [summary]);
-  const paymentTotals = useMemo(
-    () => ({
+  const paymentTotals = useMemo(() => {
+    const shipping = checkoutTotals.shipping;
+    const discount = checkoutTotals.discount || totals.discount || 0;
+    const vat = checkoutTotals.vat || totals.vat || 0;
+    const grandTotal =
+      checkoutTotals.grandTotal || totals.subtotal - discount + vat + shipping;
+    return {
       ...totals,
-      shipping: checkoutTotals.shipping,
-      totalInclVat: checkoutTotals.grandTotal || totals.subtotal + checkoutTotals.shipping,
+      discount,
+      vat,
+      shipping,
+      grandTotal,
+      totalInclVat: grandTotal,
+      formattedDiscount: checkoutTotals.formattedDiscount || totals.formattedDiscount,
+      formattedVat: checkoutTotals.formattedVat || totals.formattedVat,
       formattedShipping: checkoutTotals.formattedShipping || totals.formattedShipping,
+      formattedGrandTotal: checkoutTotals.formattedGrandTotal || totals.formattedGrandTotal,
       formattedTotalInclVat: checkoutTotals.formattedGrandTotal || totals.formattedTotalInclVat,
-    }),
-    [totals, checkoutTotals],
-  );
+    };
+  }, [totals, checkoutTotals]);
 
   if (done) {
     return (
@@ -96,12 +110,68 @@ export default function PaymentPageClient() {
     }
   }
 
+  async function handleCreateQuote() {
+    if (!activeCartId) {
+      setError("Cart not ready.");
+      return;
+    }
+    setQuoteBusy(true);
+    setError("");
+    setQuoteMessage("");
+    try {
+      const result = await createQuote({
+        cartId: activeCartId,
+        purchaseOrderNumber: summary?.purchaseOrderNumber ? String(summary.purchaseOrderNumber) : undefined,
+        notes: summary?.orderNotes ? String(summary.orderNotes) : undefined,
+      });
+      setQuoteMessage(
+        `Quote ${String(result.quoteId ?? "")} created. ${String(result.message ?? "Our team will follow up.")}`,
+      );
+    } catch (err) {
+      setError(formatApiError(err, "Could not create quote."));
+    } finally {
+      setQuoteBusy(false);
+    }
+  }
+
   return (
-    <CheckoutLayout formLayout sidebar={<CartOrderSummary variant="payment" lines={lines} totals={paymentTotals} />}>
-      <CheckoutStepTitle step="4" title="Payment" continueHref="/cart/shipping" />
+    <CheckoutLayout
+      formLayout
+      sidebar={
+        <CartOrderSummary
+          variant="payment"
+          lines={lines}
+          totals={paymentTotals}
+          logistics={logistics}
+          promo={promo}
+          cartId={activeCartId}
+          onPromoChanged={refreshCart}
+        />
+      }
+    >
+      <CheckoutStepTitle
+        step="4"
+        title="Payment"
+        continueHref="/cart/shipping"
+        trailing={
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded border border-neutral-900 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 disabled:opacity-60"
+            onClick={handleCreateQuote}
+            disabled={quoteBusy || busy}
+          >
+            Create Quote
+          </button>
+        }
+      />
       {error ? (
         <Alert variant="error" className="mb-4">
           {error}
+        </Alert>
+      ) : null}
+      {quoteMessage ? (
+        <Alert variant="success" className="mb-4">
+          {quoteMessage}
         </Alert>
       ) : null}
       {summary?.selectedShipping ? (

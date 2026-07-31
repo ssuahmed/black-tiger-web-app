@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import Breadcrumbs from "@/components/catalog/Breadcrumbs";
 import PageShell from "@/components/layout/PageShell";
-import TwoColumnLayout from "@/components/layout/TwoColumnLayout";
 import ProductDetailSections from "@/components/product/ProductDetailSections";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductPricingBlock from "@/components/product/ProductPricingBlock";
@@ -13,7 +12,7 @@ import RelatedProductsStrip from "@/components/product/RelatedProductsStrip";
 import { Alert } from "@/components/ui";
 import { useCart } from "@/contexts/CartContext";
 import { useProductPriceQuote } from "@/hooks/useProductPriceQuote";
-import { defaultPackagingId } from "@/lib/catalog/pdpPricing.mjs";
+import { defaultPackagingId, scopePalletTables } from "@/lib/catalog/pdpPricing.mjs";
 import { CommerceApiError } from "@/lib/api/client";
 
 /** @param {{ product: Record<string, unknown> }} props */
@@ -66,16 +65,14 @@ export default function ProductDetailClient({ product }) {
     enabled: Boolean(product?.slug && (packagingOptionId || defaultPackagingIdValue)),
   });
 
-  const displayPricing = useMemo(() => {
-    const scopedPartial = packagingPricing?.partialPallet ?? livePricing?.partialPallet;
-    const scopedFull = packagingPricing?.fullPallet ?? livePricing?.fullPallet;
-    return {
+  const displayPricing = useMemo(
+    () => ({
       ...(product?.pricing && typeof product.pricing === "object" ? product.pricing : {}),
       ...livePricing,
-      partialPallet: scopedPartial ?? livePricing?.partialPallet,
-      fullPallet: scopedFull ?? livePricing?.fullPallet,
-    };
-  }, [product?.pricing, livePricing, packagingPricing]);
+      ...scopePalletTables(packagingPricing, livePricing),
+    }),
+    [product, livePricing, packagingPricing],
+  );
 
   const breadcrumbs = useMemo(() => {
     const raw = product?.breadcrumbs;
@@ -142,15 +139,18 @@ export default function ProductDetailClient({ product }) {
   }
 
   return (
-    <PageShell variant="pdp">
-      <div className="mb-6">
+    <PageShell variant="pdp" className="pdp">
+      <div className="pdp__breadcrumbs">
         <Breadcrumbs items={crumbItems} variant="shop" />
       </div>
 
-      <TwoColumnLayout
-        preset="pdp"
-        sidebarSide="right"
-        sidebar={
+      {/* Gallery holds the left column; everything else stacks in the right column. */}
+      <div className="pdp__main">
+        <div className="pdp__gallery-col">
+          <ProductGallery media={media} />
+        </div>
+
+        <div className="min-w-0">
           <ProductPurchasePanel
             product={product}
             pricing={livePricing}
@@ -163,16 +163,12 @@ export default function ProductDetailClient({ product }) {
             adding={adding}
             addMsg={addMsg}
           />
-        }
-      >
-        <ProductGallery media={media} />
-      </TwoColumnLayout>
-
-      <div className="mt-2">
-        <ProductPricingBlock product={{ ...product, pricing: displayPricing }} />
-        <ProductDetailSections product={product} />
-        <RelatedProductsStrip products={relatedProducts} />
+          <ProductPricingBlock product={{ ...product, pricing: displayPricing }} />
+          <ProductDetailSections product={product} />
+        </div>
       </div>
+
+      <RelatedProductsStrip products={relatedProducts} />
     </PageShell>
   );
 }

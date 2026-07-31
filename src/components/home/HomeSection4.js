@@ -23,7 +23,7 @@ export default function HomeSection4() {
       innerClassName="flex h-full min-h-0 items-stretch py-12 md:py-16 lg:py-20"
       aria-label="Adaptive Shield Technology"
     >
-      <SiteContainer className="grid h-full min-h-0 grid-cols-1 items-stretch gap-40 md:grid-cols-2 md:gap-64 lg:gap-80">
+      <SiteContainer className="grid h-full min-h-0 grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-16 lg:gap-24 xl:gap-40">
         <div className="flex h-full min-h-0 items-center justify-center md:justify-end">
           <Image
             src="/images/home/section-4/stronger.png"

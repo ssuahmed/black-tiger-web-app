@@ -1,3 +1,5 @@
+import { cloneElement, isValidElement } from "react";
+
 export default function FormField({
   id: idProp,
   label,
@@ -5,6 +7,7 @@ export default function FormField({
   hintAbove = false,
   error,
   required,
+  variant = "default",
   children,
   className = "",
 }) {
@@ -12,6 +15,9 @@ export default function FormField({
   const describedBy = [];
   if (hint) describedBy.push(`${cid}-hint`);
   if (error) describedBy.push(`${cid}-error`);
+  const describedByValue = describedBy.length ? describedBy.join(" ") : undefined;
+  const outlined = variant === "outlined";
+
   const hintEl =
     hint && !error ? (
       <p id={`${cid}-hint`} className="form-hint">
@@ -19,16 +25,41 @@ export default function FormField({
       </p>
     ) : null;
 
+  const labelEl = label ? (
+    <label htmlFor={cid} className={outlined ? "outlined-field__label" : "form-label"}>
+      {label}
+      {required ? (outlined ? "*" : <span aria-hidden className="form-label__req">*</span>) : null}
+    </label>
+  ) : null;
+
+  const enhanced =
+    isValidElement(children)
+      ? cloneElement(children, {
+          ...(describedByValue
+            ? {
+                "aria-describedby": [children.props["aria-describedby"], describedByValue]
+                  .filter(Boolean)
+                  .join(" "),
+              }
+            : null),
+          ...(error ? { "aria-invalid": true, invalid: true } : null),
+        })
+      : children;
+
   return (
-    <div className={["form-field", className].filter(Boolean).join(" ")}>
-      {label ? (
-        <label htmlFor={cid} className="form-label">
-          {label}
-          {required ? <span aria-hidden className="form-label__req">*</span> : null}
-        </label>
-      ) : null}
+    <div
+      className={["form-field", outlined ? "form-field--outlined" : "", className].filter(Boolean).join(" ")}
+    >
+      {!outlined ? labelEl : null}
       {hintAbove ? hintEl : null}
-      {children}
+      {outlined ? (
+        <div className={error ? "outlined-field outlined-field--invalid" : "outlined-field"}>
+          {enhanced}
+          {labelEl}
+        </div>
+      ) : (
+        enhanced
+      )}
       {!hintAbove ? hintEl : null}
       {error ? (
         <p id={`${cid}-error`} className="form-error-text" role="alert">

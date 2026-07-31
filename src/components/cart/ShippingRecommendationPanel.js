@@ -45,7 +45,7 @@ export default function ShippingRecommendationPanel({ recommendation }) {
       ) : null}
       {recommendation.lines?.length ? (
         <div className="mb-4 overflow-x-auto">
-          <table className="w-full min-w-[28rem] border-collapse text-left text-xs">
+          <table className="w-full min-w-0 border-collapse text-left text-xs sm:min-w-[28rem]">
             <thead>
               <tr className="border-b border-neutral-300 text-neutral-500">
                 <th className="py-2 pr-2 font-semibold">Product</th>

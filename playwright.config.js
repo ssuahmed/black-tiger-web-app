@@ -11,6 +11,7 @@ const config = {
     baseURL: process.env.WEB_BASE || "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    ignoreHTTPSErrors: true,
   },
   projects: [
     { name: "desktop", use: { viewport: { width: 1280, height: 800 } } },

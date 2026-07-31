@@ -15,7 +15,7 @@ import { forwardRef } from "react";
  */
 const SiteSection = forwardRef(function SiteSection(
   {
-    width = "100vw",
+    width = "100%",
     height,
     backgroundImage,
     backgroundPosition = "center",

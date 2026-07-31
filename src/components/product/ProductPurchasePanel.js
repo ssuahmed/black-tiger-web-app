@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
 import { Spinner } from "@/components/ui";
 
 import { cn } from "@/lib/cn";
@@ -33,54 +32,55 @@ export default function ProductPurchasePanel({
   const lineRows = Array.isArray(pricing.lineSummaryRows) ? pricing.lineSummaryRows : [];
   const totalPrice = pricing.totalPrice ? String(pricing.totalPrice) : "";
 
-  const selectedLabel = useMemo(() => {
-    const opt = packagingOptions.find((o) => o && typeof o === "object" && String(o.id) === packagingOptionId);
-    return opt && typeof opt === "object" ? String(opt.label ?? "") : "";
-  }, [packagingOptions, packagingOptionId]);
+  const selectedOption = packagingOptions.find(
+    (o) => o && typeof o === "object" && String(o.id) === packagingOptionId,
+  );
+  const selectedLabel = selectedOption ? String(selectedOption.label ?? "") : "";
+
+  const priceText = String(formattedPrice);
+  const showRiyalSymbol = /\bSAR\b/i.test(priceText);
 
   return (
-    <div className="text-neutral-900">
-      <h1 className="font-magistral m-0 text-2xl leading-tight font-bold tracking-wide">
-        {name}
-      </h1>
-      {subtitle ? <p className="mt-2 mb-0 text-sm text-neutral-500">{subtitle}</p> : null}
+    <div className="pdp-buy">
+      <h1 className="pdp-buy__title">{name}</h1>
+      {subtitle ? <p className="pdp-buy__subtitle">{subtitle}</p> : null}
 
-      {sizeLabel ? (
-        <p className="mt-6 mb-2 text-sm text-neutral-900">
-          Size: <span className="font-semibold">{selectedLabel || sizeLabel}</span>
-        </p>
+      {packagingOptions.length > 0 ? (
+        <>
+          <p className="pdp-buy__label">
+            {sizeLabel ? `Pack size (${selectedLabel || sizeLabel})` : "Pack size"}
+          </p>
+          <div className="pdp-buy__options" role="group" aria-label="Pack size">
+            {packagingOptions.map((raw) => {
+              const o = raw && typeof raw === "object" ? raw : {};
+              const id = String(o.id ?? "");
+              const active = id === packagingOptionId;
+              const hasSale = Array.isArray(o.badges) && o.badges.includes("sale");
+              return (
+                <button
+                  key={id || o.label}
+                  type="button"
+                  className={cn(
+                    "pdp-option",
+                    active && "pdp-option--active",
+                    hasSale && "pdp-option--badged",
+                  )}
+                  aria-pressed={active}
+                  onClick={() => onPackagingChange(id)}
+                >
+                  {String(o.label ?? id)}
+                  {hasSale ? <span className="pdp-option__badge">Sale</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        </>
       ) : null}
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        {packagingOptions.map((raw) => {
-          const o = raw && typeof raw === "object" ? raw : {};
-          const id = String(o.id ?? "");
-          const active = id === packagingOptionId;
-          const hasSale = Array.isArray(o.badges) && o.badges.includes("sale");
-          return (
-            <button
-              key={id || o.label}
-              type="button"
-              className={cn(
-              "relative box-border min-h-9 cursor-pointer border bg-white px-2.5 py-2 text-center text-xs leading-tight font-medium text-neutral-900 transition-[border-color,box-shadow] duration-150 hover:border-neutral-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                active ? "border-primary shadow-[0_0_0_1px_var(--primary)]" : "border-neutral-300",
-              )}
-              onClick={() => onPackagingChange(id)}
-            >
-              {hasSale ? (
-                <span className="absolute -top-1.5 -right-1 bg-primary px-1.5 py-0.5 text-xs font-bold tracking-wide text-white uppercase">
-                  Sale
-                </span>
-              ) : null}
-              {String(o.label ?? id)}
-            </button>
-          );
-        })}
-      </div>
-
-      {formattedPrice ? (
-        <p className={cn("mt-6 mb-0 text-3xl leading-none font-bold text-neutral-900", pricingLoading && "opacity-70")}>
-          {formattedPrice}
+      {priceText ? (
+        <p className={cn("pdp-buy__price", pricingLoading && "pdp-buy__price--loading")}>
+          {showRiyalSymbol ? <RiyalSymbol /> : null}
+          {priceText}
         </p>
       ) : null}
 
@@ -90,34 +90,25 @@ export default function ProductPurchasePanel({
           onAddToCart(e);
         }}
       >
-        <div className="mt-5 grid grid-cols-[minmax(0,6rem)_minmax(0,1fr)] items-stretch gap-3">
+        <div className="pdp-buy__cart-row">
           <input
             id="pdp-qty"
             type="number"
             min={1}
-            className="box-border min-h-12 w-full border border-neutral-300 bg-white px-3 py-2 text-center text-base text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
+            className="pdp-buy__qty"
             value={quantity}
             onChange={(e) => onQuantityChange(Number(e.target.value))}
             disabled={adding}
             aria-label="Quantity"
           />
-          <button
-            type="submit"
-            className="inline-flex min-h-12 cursor-pointer items-center justify-center border-none bg-neutral-900 px-6 py-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={adding}
-          >
+          <button type="submit" className="pdp-buy__submit" disabled={adding}>
             {adding ? <Spinner size="sm" /> : "Add to Cart"}
           </button>
         </div>
       </form>
 
       {addMsg ? (
-        <p
-          className={cn(
-          "mt-3 text-sm",
-            addMsg.includes("Added") ? "text-green-700" : "text-primary",
-          )}
-        >
+        <p className={cn("pdp-buy__msg", addMsg.includes("Added") ? "text-green-700" : "text-primary")}>
           {addMsg}{" "}
           {addMsg.includes("Added") ? (
             <Link href="/cart" className="font-semibold text-primary underline">
@@ -128,52 +119,59 @@ export default function ProductPurchasePanel({
       ) : null}
 
       {lineRows.length > 0 ? (
-        <table className="mt-6 w-full border-collapse text-xs">
-          <thead>
-            <tr>
-              <th className="border border-neutral-200 bg-neutral-100 px-2.5 py-2 text-left font-semibold text-neutral-600">
-                Packaging
-              </th>
-              <th className="border border-neutral-200 bg-neutral-100 px-2.5 py-2 text-left font-semibold text-neutral-600">
-                Full/Partial Pallet
-              </th>
-              <th className="border border-neutral-200 bg-neutral-100 px-2.5 py-2 text-left font-semibold text-neutral-600">
-                Qty
-              </th>
-              <th className="border border-neutral-200 bg-neutral-100 px-2.5 py-2 text-left font-semibold text-neutral-600">
-                Unit Price
-              </th>
-              <th className="border border-neutral-200 bg-neutral-100 px-2.5 py-2 text-left font-semibold text-neutral-600">
-                EXT Price
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lineRows.map((row, i) => {
-              const r = row && typeof row === "object" ? row : {};
-              return (
-                <tr key={i}>
-                  <td className="border border-neutral-200 px-2.5 py-2 text-neutral-900">{String(r.packaging ?? "")}</td>
-                  <td className="border border-neutral-200 px-2.5 py-2 text-neutral-900">{String(r.pallet ?? "")}</td>
-                  <td className="border border-neutral-200 px-2.5 py-2 text-neutral-900">{String(r.qty ?? "")}</td>
-                  <td className="border border-neutral-200 px-2.5 py-2 text-neutral-900">{String(r.unitPrice ?? "")}</td>
-                  <td className="border border-neutral-200 px-2.5 py-2 text-neutral-900">{String(r.extPrice ?? "")}</td>
-                </tr>
-              );
-            })}
-            {totalPrice ? (
-              <tr className="font-bold [&_td]:bg-neutral-200">
-                <td colSpan={4} className="border border-neutral-200 px-2.5 py-2 text-neutral-900">
-                  <strong>TOTAL PRICE</strong>
-                </td>
-                <td className="border border-neutral-200 px-2.5 py-2 text-neutral-900">
-                  <strong>{totalPrice}</strong>
-                </td>
+        <div className="pdp-table-wrap">
+          <table className="pdp-table">
+            <thead>
+              <tr>
+                <th scope="col">Packaging</th>
+                <th scope="col">Full/Partial Pallet</th>
+                <th scope="col">QTY</th>
+                <th scope="col">Unit Price</th>
+                <th scope="col">EXT Price</th>
               </tr>
-            ) : null}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {lineRows.map((row, i) => {
+                const r = row && typeof row === "object" ? row : {};
+                return (
+                  <tr key={i}>
+                    <td>{String(r.packaging ?? "")}</td>
+                    <td>{String(r.pallet ?? "")}</td>
+                    <td>{String(r.qty ?? "")}</td>
+                    <td>{String(r.unitPrice ?? "")}</td>
+                    <td>{String(r.extPrice ?? "")}</td>
+                  </tr>
+                );
+              })}
+              {totalPrice ? (
+                <tr className="pdp-table__total">
+                  <td colSpan={4}>TOTAL PRICE</td>
+                  <td>{totalPrice}</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </div>
+  );
+}
+
+function RiyalSymbol() {
+  return (
+    <svg
+      className="pdp-buy__price-symbol"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <g stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+        <path d="M15.6 2.4v8.4c0 2.5-2 4.5-4.5 4.5" />
+        <path d="M9.2 2.4v9.2" />
+        <path d="M2.8 17.3h18.4" />
+        <path d="M2.8 21h18.4" />
+      </g>
+    </svg>
   );
 }

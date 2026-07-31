@@ -50,18 +50,17 @@ export default function ForgotPasswordClient() {
   }
 
   return (
-    <AuthCard
-      title="Forgot password"
-      subtitle="Enter your email or mobile number. We'll send reset instructions when possible."
-      footer={
-        <Link href={routes.signIn} className="text-primary hover:underline">
-          Back to sign in
-        </Link>
-      }
-    >
+    <AuthCard title="Forgot password" footer={<Link href={routes.signIn}>Back to sign in</Link>}>
       <form onSubmit={onSubmit} className="form-stack">
-        <FormField id="fp-id" label="Email or mobile" required>
-          <Input id="fp-id" value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" disabled={busy} />
+        <FormField id="fp-id" label="Email or mobile" required variant="outlined">
+          <Input
+            id="fp-id"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            autoComplete="username"
+            placeholder="Email or mobile"
+            disabled={busy}
+          />
         </FormField>
         {info ? (
           <Alert variant="success" role="status">
@@ -73,7 +72,7 @@ export default function ForgotPasswordClient() {
             {error}
           </Alert>
         ) : null}
-        <Button type="submit" className="w-full btn-primary" disabled={busy}>
+        <Button type="submit" className="btn-auth" disabled={busy || !identifier.trim()}>
           {busy ? <Spinner size="sm" /> : "Send instructions"}
         </Button>
       </form>

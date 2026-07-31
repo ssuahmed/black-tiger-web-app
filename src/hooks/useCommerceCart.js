@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
-import { mapApiCartLine, mapApiCartTotals } from "@/lib/cart/mapApiCart.mjs";
+import { mapApiCartLine, mapApiCartTotals, mapApiLogistics, mapApiPromo } from "@/lib/cart/mapApiCart.mjs";
 
 /** @param {{ shipping?: number }} [opts] */
 export function useCommerceCart(opts = {}) {
-  const { cart, loading, ensureCart, updateLine, removeLine } = useCart();
+  const { cart, loading, ensureCart, updateLine, removeLine, refreshCart } = useCart();
   const [ready, setReady] = useState(false);
   const shipping = opts.shipping ?? 0;
 
@@ -28,6 +28,8 @@ export function useCommerceCart(opts = {}) {
   }, [cart]);
 
   const totals = useMemo(() => mapApiCartTotals(cart, shipping), [cart, shipping]);
+  const logistics = useMemo(() => mapApiLogistics(cart?.logistics), [cart]);
+  const promo = useMemo(() => mapApiPromo(cart), [cart]);
 
   const updateQuantity = useCallback(
     async (lineId, quantity) => {
@@ -48,10 +50,13 @@ export function useCommerceCart(opts = {}) {
     cart,
     lines,
     totals,
+    logistics,
+    promo,
     ready: ready && !loading,
     loading,
     isEmpty: lines.length === 0,
     updateQuantity,
     removeLine: removeLineById,
+    refreshCart,
   };
 }

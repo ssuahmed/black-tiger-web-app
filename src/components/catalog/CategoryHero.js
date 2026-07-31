@@ -25,7 +25,7 @@ export default function CategoryHero({
       }
     >
       <SiteContainer className="box-border flex w-full min-h-[inherit] items-stretch justify-end">
-        <div className="box-border my-0 ms-auto me-[var(--page-gutter-x)] flex w-full min-w-0 max-w-[min(100%,clamp(18rem,calc(100vw*420/1920),26.25rem))] flex-col bg-white px-[clamp(1.5rem,calc(100vw*40/1920),2.5rem)] py-[clamp(1.5rem,calc(100vw*40/1920),2.5rem)] text-neutral-900 lg:ms-8 lg:me-[max(var(--page-gutter-x),env(safe-area-inset-right,0px))]">
+        <div className="box-border my-4 ms-auto me-0 flex w-full min-w-0 max-w-[min(100%,clamp(18rem,calc(100vw*420/1920),26.25rem))] flex-col bg-white px-[clamp(1.25rem,calc(100vw*40/1920),2.5rem)] py-[clamp(1.25rem,calc(100vw*40/1920),2.5rem)] text-neutral-900 sm:my-6 lg:ms-8 lg:me-0">
           <p className="m-0 text-xs font-bold tracking-[0.12em] text-primary uppercase">{eyebrow}</p>
           <h1 className="font-magistral mt-2.5 mb-0 text-2xl leading-[1.12] font-bold tracking-[0.04em] uppercase">
             {title}

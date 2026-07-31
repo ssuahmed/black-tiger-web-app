@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 import * as authApi from "@/lib/api/auth";
 
 const FALLBACK = {
-  rules: [{ code: "MIN_LENGTH", label: "At least 8 characters", required: true }],
-  hint: "At least 8 characters",
+  rules: [
+    { code: "MIN_LENGTH", label: "8 characters", required: true },
+    { code: "SPECIAL_CHAR", label: "1 special character (Example: # $ @ & ? )", required: true },
+    { code: "MIXED_CASE", label: "1 uppercase and 1 lowercase letter", required: true },
+    { code: "DIGIT", label: "1 numerical digit", required: true },
+  ],
+  hint: "At least 8 characters, mixed case, a number, and a special character",
 };
 
 /**

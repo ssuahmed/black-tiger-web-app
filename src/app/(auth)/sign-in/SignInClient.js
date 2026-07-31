@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AuthCard from "@/components/auth/AuthCard";
-import { Alert, Button, Checkbox, FormField, Input, OtpInput, SegmentedControl, Spinner } from "@/components/ui";
+import PasswordRequirements from "@/components/auth/PasswordRequirements";
+import { Alert, Button, Checkbox, FormField, Input, OtpInput, PasswordInput, SegmentedControl, Spinner } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePasswordPolicy } from "@/hooks/usePasswordPolicy";
 import { safeReturnPath } from "@/lib/auth/authRedirect.mjs";
 import { clearOtpSession, stashOtpSession } from "@/lib/authSession";
 import { formatApiError } from "@/lib/formatApiError";
+import { passwordMeetsPolicy } from "@/lib/passwordRules";
 import { routes } from "@/lib/routes";
 
 /** @param {{ initialIntent?: 'login' | 'register' }} props */
@@ -34,6 +36,15 @@ export default function SignInClient({ initialIntent = "login" }) {
   const [busy, setBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
   const [error, setError] = useState("");
+
+  const registerReady = useMemo(() => {
+    return (
+      passwordMeetsPolicy(password, policy.rules) &&
+      password === confirmPassword &&
+      confirmPassword.length > 0 &&
+      acceptTerms
+    );
+  }, [password, confirmPassword, acceptTerms, policy.rules]);
 
   function afterAuth() {
     clearOtpSession();
@@ -145,8 +156,8 @@ export default function SignInClient({ initialIntent = "login" }) {
   async function onRegisterSubmit(e) {
     e.preventDefault();
     setError("");
-    if (password.length < 8) {
-      setError(policy.hint || "Password must be at least 8 characters.");
+    if (!passwordMeetsPolicy(password, policy.rules)) {
+      setError(policy.hint || "Password does not meet the requirements.");
       return;
     }
     if (password !== confirmPassword) {
@@ -226,19 +237,17 @@ export default function SignInClient({ initialIntent = "login" }) {
     intent === "login"
       ? step === "otp"
         ? "Verify sign-in"
-        : "Welcome back"
+        : "Sign In"
       : step === "otp"
         ? "Verify your email"
-        : "Create an account";
+        : "Sign Up";
 
   const subtitle =
     step === "otp"
       ? maskedDestination
         ? `Code sent to ${maskedDestination}`
         : "Enter the code we sent to your email or phone."
-      : intent === "login"
-        ? "Sign in to manage orders and checkout faster."
-        : "Register to save addresses and track purchases.";
+      : null;
 
   return (
     <AuthCard title={title} subtitle={subtitle}>
@@ -246,7 +255,6 @@ export default function SignInClient({ initialIntent = "login" }) {
         {step === "identifier" ? (
           <>
             <SegmentedControl
-              className="mb-[1.125rem]"
               options={[
                 { value: "login", label: "Log in" },
                 { value: "register", label: "Sign up" },
@@ -257,14 +265,19 @@ export default function SignInClient({ initialIntent = "login" }) {
                 setError("");
               }}
             />
-            <form onSubmit={onContinueIdentifier}>
-              <FormField id="identifier" label="Email or mobile" required>
+            <form onSubmit={onContinueIdentifier} className="form-stack">
+              <FormField
+                id="identifier"
+                label={intent === "register" ? "Email address" : "Email or mobile"}
+                required
+                variant="outlined"
+              >
                 <Input
                   id="identifier"
                   autoComplete="username"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder={intent === "register" ? "Email address" : "you@company.com"}
                   disabled={busy}
                 />
               </FormField>
@@ -273,7 +286,7 @@ export default function SignInClient({ initialIntent = "login" }) {
                   {error}
                 </Alert>
               ) : null}
-              <Button type="submit" className="mt-2 w-full btn-primary" disabled={busy}>
+              <Button type="submit" className="btn-auth" disabled={busy || !identifier.trim()}>
                 {busy ? <Spinner size="sm" /> : "Continue"}
               </Button>
             </form>
@@ -282,17 +295,22 @@ export default function SignInClient({ initialIntent = "login" }) {
 
         {step === "login_method" && intent === "login" ? (
           <div className="form-stack">
-            <p className="text-sm text-neutral-600">
+            <p className="auth-meta">
               Signed in as <strong>{maskedDestination || identifier}</strong>{" "}
-              <button type="button" className="text-primary underline" onClick={restartIdentifier}>
+              <button type="button" onClick={restartIdentifier}>
                 Change
               </button>
             </p>
-            <p className="text-sm font-semibold">Choose how to sign in</p>
-            <Button type="button" className="w-full btn-primary" disabled={busy} onClick={() => void onPickLoginMethod("otp")}>
-              One-time code (OTP)
+            <Button type="button" className="btn-auth" disabled={busy} onClick={() => void onPickLoginMethod("otp")}>
+              {busy && loginMethod === "otp" ? <Spinner size="sm" /> : "One-time code (OTP)"}
             </Button>
-            <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={() => void onPickLoginMethod("password")}>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={busy}
+              onClick={() => void onPickLoginMethod("password")}
+            >
               Password
             </Button>
             {error ? (
@@ -305,19 +323,19 @@ export default function SignInClient({ initialIntent = "login" }) {
 
         {step === "password" && intent === "login" ? (
           <form onSubmit={onPasswordLogin} className="form-stack">
-            <p className="text-sm text-neutral-600">
+            <p className="auth-meta">
               <strong>{maskedDestination || identifier}</strong>{" "}
-              <button type="button" className="text-primary underline" onClick={restartIdentifier}>
+              <button type="button" onClick={restartIdentifier}>
                 Change
               </button>
             </p>
-            <FormField id="pw" label="Password" required>
-              <Input
+            <FormField id="pw" label="Password" required variant="outlined">
+              <PasswordInput
                 id="pw"
-                type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
                 disabled={busy}
               />
             </FormField>
@@ -331,7 +349,7 @@ export default function SignInClient({ initialIntent = "login" }) {
                 {error}
               </Alert>
             ) : null}
-            <Button type="submit" className="w-full btn-primary" disabled={busy}>
+            <Button type="submit" className="btn-auth" disabled={busy || !password}>
               {busy ? <Spinner size="sm" /> : "Sign in"}
             </Button>
           </form>
@@ -339,32 +357,41 @@ export default function SignInClient({ initialIntent = "login" }) {
 
         {step === "register_form" ? (
           <form onSubmit={onRegisterSubmit} className="form-stack">
-            <p className="text-sm text-neutral-600">
-              Email <strong>{maskedDestination || identifier}</strong>{" "}
-              <button type="button" className="text-primary underline" onClick={restartIdentifier}>
-                Change
+            <FormField id="reg-email" label="Email address" required variant="outlined">
+              <Input
+                id="reg-email"
+                type="email"
+                autoComplete="email"
+                value={maskedDestination || identifier}
+                readOnly
+              />
+            </FormField>
+            <p className="auth-meta">
+              <button type="button" onClick={restartIdentifier}>
+                Change email
               </button>
             </p>
-            <FormField id="reg-pw" label="Password" hint={policy.hint} required>
-              <Input
+            <FormField id="reg-pw" label="New Password" required variant="outlined">
+              <PasswordInput
                 id="reg-pw"
-                type="password"
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="New Password"
                 disabled={busy}
               />
             </FormField>
-            <FormField id="reg-pw2" label="Confirm password" required>
-              <Input
+            <FormField id="reg-pw2" label="Confirm new password" required variant="outlined">
+              <PasswordInput
                 id="reg-pw2"
-                type="password"
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
                 disabled={busy}
               />
             </FormField>
+            <PasswordRequirements password={password} rules={policy.rules} />
             <Checkbox
               checked={acceptTerms}
               onChange={(e) => setAcceptTerms(e.target.checked)}
@@ -387,23 +414,19 @@ export default function SignInClient({ initialIntent = "login" }) {
                 {error}
               </Alert>
             ) : null}
-            <Button type="submit" className="w-full btn-primary" disabled={busy}>
-              {busy ? <Spinner size="sm" /> : "Create account"}
+            <Button type="submit" className="btn-auth" disabled={busy || !registerReady}>
+              {busy ? <Spinner size="sm" /> : "Sign up"}
             </Button>
           </form>
         ) : null}
 
         {step === "otp" ? (
           <form onSubmit={onVerifyOtp} className="form-stack">
-            <p className="text-sm text-neutral-600">
+            <p className="auth-meta">
               Not you?{" "}
-              <button type="button" className="text-primary underline" onClick={restartIdentifier}>
+              <button type="button" onClick={restartIdentifier}>
                 Start over
-              </button>{" "}
-              ·{" "}
-              <Link href={routes.verifyOtp} className="text-primary underline">
-                Open verify screen
-              </Link>
+              </button>
             </p>
             <FormField id="otp" label="One-time code">
               <OtpInput value={otpCode} onChange={setOtpCode} disabled={busy} />
@@ -413,7 +436,7 @@ export default function SignInClient({ initialIntent = "login" }) {
                 {error}
               </Alert>
             ) : null}
-            <Button type="submit" className="w-full btn-primary" disabled={busy}>
+            <Button type="submit" className="btn-auth" disabled={busy || otpCode.replace(/\D/g, "").length !== 6}>
               {busy ? <Spinner size="sm" /> : "Verify & continue"}
             </Button>
             <Button

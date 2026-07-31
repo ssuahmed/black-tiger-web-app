@@ -75,7 +75,44 @@ function AccountShellInner({ children }) {
           </div>
         ) : null}
       </div>
-      <nav className="flex flex-col p-2">
+      <details className="group border-t border-neutral-200 lg:hidden">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-neutral-800 marker:content-none [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center justify-between gap-2">
+            Account menu
+            <span className="text-neutral-500 transition-transform group-open:rotate-180" aria-hidden>
+              ▾
+            </span>
+          </span>
+        </summary>
+        <nav className="flex flex-col border-t border-neutral-200 p-2">
+          {NAV_ITEMS.map((item) =>
+            item.type === "heading" ? (
+              <p key={`m-${item.label}`} className="px-3 pb-1 pt-3 text-xs font-bold tracking-wider text-neutral-500">
+                {item.label}
+              </p>
+            ) : (
+              <Link
+                key={`m-${item.href}`}
+                href={item.href}
+                className={`${linkClass} ${pathname === item.href ? linkActiveClass : ""}`}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span>{item.label}</span>
+                  {item.badgeKey && Number(navBadges[item.badgeKey]) > 0 ? (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-neutral-900 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      {Number(navBadges[item.badgeKey])}
+                    </span>
+                  ) : null}
+                </span>
+              </Link>
+            ),
+          )}
+          <button type="button" className={`${linkClass} mt-1 text-left text-primary`} onClick={() => void onSignOut()}>
+            Sign out
+          </button>
+        </nav>
+      </details>
+      <nav className="hidden flex-col p-2 lg:flex">
         {NAV_ITEMS.map((item) =>
           item.type === "heading" ? (
             <p key={item.label} className="px-3 pb-1 pt-3 text-xs font-bold tracking-wider text-neutral-500">

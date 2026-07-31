@@ -8,12 +8,7 @@ export default function HomeHotSellingProducts({ title = "Hot Selling Products",
   return (
     <section className="w-full border-t border-neutral-300 bg-white" aria-label="Hot selling products">
       <SiteContainer className="py-[clamp(2rem,4vw,3rem)]">
-        <RelatedProductsStrip
-          products={products}
-          title={title}
-          headingId="hot-selling-heading"
-          className="mt-0 border-t-0 pt-0"
-        />
+        <RelatedProductsStrip products={products} title={title} headingId="hot-selling-heading" flush />
       </SiteContainer>
     </section>
   );

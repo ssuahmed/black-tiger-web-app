@@ -1,15 +1,16 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import HeaderAccountLink from "@/components/layout/HeaderAccountLink";
 import CartIconLink from "@/components/layout/CartIconLink";
+import HeaderSearch from "@/components/layout/HeaderSearch";
 import MobileMainNav from "@/components/layout/MobileMainNav";
 import SiteNav from "@/components/layout/SiteNav";
 import BrandLogo from "@/components/ui/BrandLogo";
 import Icon from "@/components/ui/Icon";
-import { routes } from "@/lib/routes";
 
 export default function SiteHeader() {
   return (
-    <header className="site-header">
+    <header className="site-header relative">
       <div className="site-header__inner">
         <div className="site-header__brand">
           <Link
@@ -23,36 +24,18 @@ export default function SiteHeader() {
           <SiteNav />
         </div>
         <div className="site-header__actions flex-y-center gap-1 sm:gap-2 md:gap-3">
-          <form
-            action={routes.shop}
-            method="get"
-            className="site-header__search hidden min-w-0 max-w-[14rem] md:flex md:max-w-[18rem] lg:max-w-xs"
-            role="search"
+          <Suspense
+            fallback={
+              <span className="site-header__search" aria-hidden>
+                <span className="icon-btn shrink-0">
+                  <Icon name="search" className="header-icon text-white" />
+                </span>
+              </span>
+            }
           >
-            <label className="sr-only" htmlFor="site-header-search-q">
-              Search products
-            </label>
-            <input
-              id="site-header-search-q"
-              name="q"
-              type="search"
-              placeholder="Search products…"
-              className="site-header__search-input"
-              autoComplete="off"
-            />
-            <button type="submit" className="icon-btn shrink-0" aria-label="Submit search">
-              <Icon name="search" className="header-icon text-white" />
-            </button>
-          </form>
+            <HeaderSearch />
+          </Suspense>
           <nav className="flex-y-center gap-1 sm:gap-2 md:gap-3" aria-label="Quick actions">
-            <Link
-              href={routes.shop}
-              className="icon-btn md:hidden"
-              aria-label="Search"
-              scroll={false}
-            >
-              <Icon name="search" className="header-icon text-white" />
-            </Link>
             <HeaderAccountLink />
             <CartIconLink className="icon-btn icon-btn--lg-only" />
           </nav>

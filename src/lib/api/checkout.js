@@ -7,6 +7,18 @@ export function setCheckoutAddress(cartId, body) {
   });
 }
 
+export function resolveCheckoutAddress(body) {
+  return commerceFetch("checkout/address/resolve", { method: "POST", json: body });
+}
+
+export function listWarehouses() {
+  return commerceFetch("checkout/warehouses", { method: "GET" });
+}
+
+export function getWarehouse(slug) {
+  return commerceFetch(`checkout/warehouses/${encodeURIComponent(slug)}`, { method: "GET" });
+}
+
 export function getCheckoutSummary(cartId) {
   return commerceFetch(`checkout/${encodeURIComponent(cartId)}/summary`, { method: "GET" });
 }

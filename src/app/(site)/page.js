@@ -32,11 +32,19 @@ export default async function Home() {
 
   return (
     <>
-      <SiteSection backgroundImage={`url('${home.hero.backgroundImage}')`} height="80vh">
-        <SiteContainer className="flex h-200 flex-col items-start justify-between py-30">
-          <h1 className="font-magistral text-5xl text-white">{home.hero.title}</h1>
+      <SiteSection
+        backgroundImage={`url('${home.hero.backgroundImage}')`}
+        height="80vh"
+        preserveAspectOnMobile={false}
+        className="home-hero-section"
+      >
+        <SiteContainer className="flex h-full flex-col items-start justify-center gap-8 py-4 lg:justify-between lg:py-30">
+          <h1 className="font-magistral m-0 max-w-[18ch] text-[clamp(1.125rem,5vw,3rem)] leading-[1.1] text-white">
+            {home.hero.title}
+          </h1>
           <HomeAskAiButton
             label={home.hero.cta.label}
+            className="btn btn-primary font-magistral home-ask-ai-btn items-center gap-2 text-2xl no-underline"
             style={{ alignSelf: "flex-end", border: "none", backgroundColor: "var(--header-bg)" }}
           />
         </SiteContainer>
@@ -44,9 +52,17 @@ export default async function Home() {
 
       <HomeProductStrip panels={home.productStrip} />
 
-      <SiteSection backgroundImage={`url('${home.section3.backgroundImage}')`} height="580px">
-        <SiteContainer className="flex h-100 flex-col items-end justify-end">
-          <Link href={home.section3.cta.href} className="btn btn-primary font-magistral inline-flex text-2xl no-underline">
+      <SiteSection
+        backgroundImage={`url('${home.section3.backgroundImage}')`}
+        height="580px"
+        preserveAspectOnMobile={false}
+        className="min-h-[16rem] sm:min-h-[22rem]"
+      >
+        <SiteContainer className="flex min-h-[inherit] h-full flex-col items-end justify-end py-10 sm:py-14">
+          <Link
+            href={home.section3.cta.href}
+            className="btn btn-primary font-magistral inline-flex text-base no-underline sm:text-xl md:text-2xl"
+          >
             {home.section3.cta.label}
           </Link>
         </SiteContainer>
@@ -62,14 +78,18 @@ export default async function Home() {
         innerClassName="flex h-full min-h-0 items-stretch py-12 md:py-16 lg:py-20"
         aria-label="Adaptive Shield Technology"
       >
-        <SiteContainer className="grid h-full min-h-0 grid-cols-1 items-stretch gap-40 md:grid-cols-2 md:gap-64 lg:gap-80">
-          <div className="flex justify-end">
-            <img src={home.section4.strongerImage} alt="Stronger" style={{ transform: "scale(1.2)" }} />
+        <SiteContainer className="grid h-full min-h-0 grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-16 lg:gap-24 xl:gap-40">
+          <div className="flex justify-center md:justify-end">
+            <img
+              src={home.section4.strongerImage}
+              alt="Stronger"
+              className="h-auto w-auto max-h-[16rem] max-w-full object-contain sm:max-h-[20rem] md:max-h-none md:scale-110 lg:scale-[1.2]"
+            />
           </div>
-          <div>
-            <div className="box-border flex h-full min-w-0 max-w-[min(100%,500px)] flex-col bg-white px-[clamp(1.5rem,calc(100vw*40/1920),2.5rem)] py-[clamp(1.5rem,calc(100vw*40/1920),2.5rem)] text-neutral-900">
+          <div className="flex min-w-0 justify-center md:justify-start">
+            <div className="box-border flex h-full min-w-0 w-full max-w-[min(100%,500px)] flex-col bg-white px-[clamp(1.25rem,calc(100vw*40/1920),2.5rem)] py-[clamp(1.25rem,calc(100vw*40/1920),2.5rem)] text-neutral-900">
               <p className="m-0 text-xs font-bold tracking-[0.12em] text-primary uppercase">{home.section4.eyebrow}</p>
-              <h2 className="font-magistral mt-2.5 mb-0 text-2xl leading-[1.12] font-bold tracking-[0.04em] uppercase">
+              <h2 className="font-magistral mt-2.5 mb-0 text-xl leading-[1.12] font-bold tracking-[0.04em] uppercase sm:text-2xl">
                 <span className="block">{home.section4.titleLine1}</span>
                 <span className="block">{home.section4.titleLine2}</span>
               </h2>
@@ -79,7 +99,10 @@ export default async function Home() {
               />
               <Link
                 href={home.section4.cta.href}
-                className="mt-auto inline-flex items-center justify-center self-start rounded-full border border-primary bg-white px-6 py-2.5 text-xs font-bold tracking-[0.1em] text-primary uppercase no-underline transition-colors duration-150 hover:bg-primary hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="mt-6 inline-flex items-center justify-center self-start rounded-full border 
+                border-primary bg-white px-6 py-2.5 text-xs font-bold tracking-[0.1em] text-primary uppercase 
+                no-underline transition-colors duration-150 hover:bg-primary hover:text-white focus-visible:outline-2 
+                focus-visible:outline-offset-2 focus-visible:outline-primary md:mt-auto"
               >
                 {home.section4.cta.label}
               </Link>
@@ -88,7 +111,7 @@ export default async function Home() {
         </SiteContainer>
       </SiteSection>
 
-      <SiteSection className="w-full max-w-full">
+      <SiteSection className="w-full max-w-full" preserveAspectOnMobile={false}>
         <ApplicationAccordion categories={home.applications} />
       </SiteSection>
 

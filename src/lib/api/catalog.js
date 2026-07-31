@@ -34,3 +34,8 @@ export function getProductPriceQuote(slug, body) {
 export function getFeatured() {
   return commerceFetch("catalog/featured", { method: "GET" });
 }
+
+/** @param {string} q */
+export function searchProducts(q) {
+  return commerceFetch(`catalog/search${buildQueryString({ q })}`, { method: "GET" });
+}
