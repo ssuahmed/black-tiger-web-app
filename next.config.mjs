@@ -30,6 +30,9 @@ const nextConfig = {
       ...odooRemotePatterns(),
     ],
   },
+  async redirects() {
+    return [{ source: "/homev2", destination: "/", permanent: true }];
+  },
 };
 
 export default nextConfig;

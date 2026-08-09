@@ -1,7 +1,10 @@
 /** Canonical app paths — use for nav, footer, and redirects. */
 export const routes = {
   home: "/",
-  homeV2: "/homev2",
+  /** Legacy homepage layout (pre–1440 mock). */
+  homeOld: "/homeold",
+  /** @deprecated Prefer `routes.home` — `/homev2` redirects to `/`. */
+  homeV2: "/",
   /** @deprecated Catalog lives on /products — kept as alias for older call sites. */
   shop: "/products",
   productsIndex: "/products",

@@ -1,10 +1,11 @@
-import ApplicationAccordion from "@/components/home/ApplicationAccordion";
 import HomeFooter from "@/components/home/HomeFooter";
 import HomeHotSellingProducts from "@/components/home/HomeHotSellingProducts";
 import HomeProductStrip from "@/components/home/HomeProductStrip";
-import HomeSection6 from "@/components/home/HomeSection6";
-import HomeSection7 from "@/components/home/HomeSection7";
-import HomeSection8 from "@/components/home/HomeSection8";
+import HomeV2Accordion from "@/components/home/v2/HomeV2Accordion";
+import HomeV2AdaptiveShield from "@/components/home/v2/HomeV2AdaptiveShield";
+import HomeV2Locations from "@/components/home/v2/HomeV2Locations";
+import HomeV2Packaging from "@/components/home/v2/HomeV2Packaging";
+import HomeV2WorkshopCta from "@/components/home/v2/HomeV2WorkshopCta";
 import SiteContainer from "@/components/layout/SiteContainer";
 import SiteSection from "@/components/layout/SiteSection";
 import { getFeatured } from "@/lib/api/catalog";
@@ -21,6 +22,7 @@ export async function generateMetadata() {
   };
 }
 
+/** Homepage — 1440 mock layout (formerly `/homev2`). */
 export default async function Home() {
   const [cmsPage, featuredProducts] = await Promise.all([
     fetchPageContent("home"),
@@ -30,7 +32,7 @@ export default async function Home() {
   const home = parseHomePage(cmsPage?.blocks);
 
   return (
-    <>
+    <div className="home-v2">
       <SiteSection
         backgroundImage={`url('${home.hero.backgroundImage}')`}
         height="660px"
@@ -62,60 +64,25 @@ export default async function Home() {
         </SiteContainer>
       </SiteSection>
 
-      <SiteSection
-        width="100%"
-        height="auto"
-        aspectRatio="1440/560"
-        preserveAspectOnMobile={false}
-        backgroundImage={`url('${home.section4.backgroundImage}')`}
-        backgroundSize="100% 100%"
-        backgroundPosition="center"
-        className="hidden sm:block"
-        innerClassName="hidden sm:flex h-full min-h-0 items-stretch py-12 md:py-16 "
-        aria-label="Adaptive Shield Technology"
-      >
-        <SiteContainer className="grid h-full min-h-0 grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-16 lg:gap-24 xl:gap-90">
-          <div className="flex justify-end md:justify-end">
-            <img
-              src={`${home.section4.strongerImage}`}
-              alt="Stronger"
-              className="h-auto w-auto h-full max-w-full object-contain sm:max-h-[20rem]"
-            />
-          </div>
-          <div className="flex min-w-0 justify-center md:justify-start">
-            <div className="box-border flex h-full min-w-0 w-full max-w-[min(100%,500px)] flex-col bg-white px-[clamp(1.25rem,calc(100vw*40/1920),2.5rem)] py-[clamp(1.25rem,calc(100vw*40/1920),2.5rem)] text-neutral-900">
-              <p className="m-0 text-xs font-bold tracking-[0.12em] text-primary uppercase">{home.section4.eyebrow}</p>
-              <h2 className="font-magistral mt-2.5 mb-0 text-[clamp(1.125rem,5vw,1.8rem)] leading-[1.12] font-bold tracking-[0.04em] uppercase italic">
-                <span className="block">{home.section4.titleLine1}</span>
-                <span className="block">{home.section4.titleLine2}</span>
-              </h2>
-              <div
-                className="prose prose-sm mt-4 mb-8 max-w-none text-neutral-700"
-                dangerouslySetInnerHTML={{ __html: home.section4.bodyHtml }}
-              />
-              <Link
-                href={home.section4.cta.href}
-                className="mt-6 inline-flex items-center justify-center self-start rounded-full border 
-                border-primary bg-white px-6 py-2.5 text-xs font-bold tracking-[0.1em] text-primary uppercase 
-                no-underline transition-colors duration-150 hover:bg-primary hover:text-white focus-visible:outline-2 
-                focus-visible:outline-offset-2 focus-visible:outline-primary md:mt-auto italic"
-              >
-                {home.section4.cta.label}
-              </Link>
-            </div>
-          </div>
-        </SiteContainer>
-      </SiteSection>
+      <HomeV2AdaptiveShield
+        backgroundImage={home.section4.backgroundImage}
+        strongerImage={home.section4.strongerImage}
+        eyebrow={home.section4.eyebrow}
+        titleLine1={home.section4.titleLine1}
+        titleLine2={home.section4.titleLine2}
+        bodyHtml={home.section4.bodyHtml}
+        cta={home.section4.cta}
+      />
 
-      <SiteSection className="w-full max-w-full" preserveAspectOnMobile={false}>
-        <ApplicationAccordion categories={home.applications} />
-      </SiteSection>
+      <HomeV2Accordion categories={home.applications} />
 
-      <HomeSection6 imageUrl={home.section6Image} />
-      <HomeSection7 imageUrl={home.section7Image} />
-      <HomeSection8 imageUrl={home.section8Image} />
-      <HomeHotSellingProducts title={home.hotSellingTitle} products={featuredProducts} />
+      <HomeV2WorkshopCta imageUrl={home.section6Image} />
+      <HomeV2Packaging imageUrl={home.section7Image} />
+      <HomeV2Locations imageUrl={home.section8Image} />
+
+      <HomeHotSellingProducts title="Best Selling Products" products={featuredProducts} />
+
       <HomeFooter footer={home.footer} />
-    </>
+    </div>
   );
 }
