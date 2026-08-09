@@ -1,15 +1,24 @@
 /**
- * Props for next/image when src may be an Odoo /web/image URL or a local static path.
+ * Props for next/image when src may be an Odoo /web/image URL, Commerce API media proxy, or a local static path.
  * @param {string} src
  */
 export function cmsImageProps(src) {
   if (!src) return { unoptimized: true };
-  if (src.startsWith("/web/image/") || src.includes("/web/image/")) {
+  if (
+    src.startsWith("/web/image/") ||
+    src.includes("/web/image/") ||
+    src.includes("/web/content/") ||
+    src.includes("/v1/media/odoo")
+  ) {
     return { unoptimized: true };
   }
   try {
     const url = new URL(src, "http://localhost");
-    if (url.pathname.startsWith("/web/image/")) {
+    if (
+      url.pathname.startsWith("/web/image/") ||
+      url.pathname.startsWith("/web/content/") ||
+      url.pathname.includes("/media/odoo")
+    ) {
       return { unoptimized: true };
     }
   } catch {

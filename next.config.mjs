@@ -1,24 +1,28 @@
 /** @type {import('next').NextConfig} */
-function odooRemotePatterns() {
+function mediaRemotePatterns() {
   const patterns = [];
-  const raw =
-    process.env.NEXT_PUBLIC_ODOO_IMAGE_URL ||
-    process.env.NEXT_PUBLIC_COMMERCE_API_URL?.replace(/\/v1\/?$/, "") ||
-    "http://localhost:8069";
-  try {
-    const url = new URL(raw.includes("://") ? raw : `http://${raw}`);
-    patterns.push({
-      protocol: url.protocol.replace(":", ""),
-      hostname: url.hostname,
-      ...(url.port ? { port: url.port } : {}),
-      pathname: "/web/image/**",
-    });
-  } catch {
-    patterns.push({
-      protocol: "http",
-      hostname: "localhost",
-      pathname: "/web/image/**",
-    });
+  const candidates = [
+    process.env.NEXT_PUBLIC_ODOO_IMAGE_URL,
+    process.env.NEXT_PUBLIC_COMMERCE_API_URL?.replace(/\/v1\/?$/, ""),
+    "http://localhost:3001",
+    "http://localhost:8069",
+  ].filter(Boolean);
+
+  for (const raw of candidates) {
+    try {
+      const url = new URL(raw.includes("://") ? raw : `http://${raw}`);
+      const base = {
+        protocol: url.protocol.replace(":", ""),
+        hostname: url.hostname,
+        ...(url.port ? { port: url.port } : {}),
+      };
+      patterns.push(
+        { ...base, pathname: "/web/image/**" },
+        { ...base, pathname: "/v1/media/**" },
+      );
+    } catch {
+      /* skip invalid */
+    }
   }
   return patterns;
 }
@@ -27,7 +31,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "placehold.co", pathname: "/**" },
-      ...odooRemotePatterns(),
+      ...mediaRemotePatterns(),
     ],
   },
   async redirects() {
