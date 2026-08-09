@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AccountListFilters, {
+  matchesPeriod,
+  matchesQuery,
+} from "@/components/account/AccountListFilters";
 import AccountPageHeader from "@/components/account/AccountPageHeader";
 import Card from "@/components/ui/Card";
-import { Alert, EmptyState, LoadingCenter } from "@/components/ui";
+import { Alert, EmptyState, LoadingCenter, Money } from "@/components/ui";
 import { listAccountOrders } from "@/lib/api/account";
 import { normalizeOrderRow } from "@/lib/account/mapAccount.mjs";
 import { formatApiError } from "@/lib/formatApiError";
@@ -15,6 +19,8 @@ export default function AccountOrdersClient() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [period, setPeriod] = useState("3m");
 
   useEffect(() => {
     let alive = true;
@@ -36,17 +42,41 @@ export default function AccountOrdersClient() {
     };
   }, []);
 
-  const hasRows = rows.length > 0;
-  const subtitle = useMemo(
-    () => (hasRows ? `${rows.length} order${rows.length === 1 ? "" : "s"}` : "Your order history"),
-    [hasRows, rows.length],
+  const filtered = useMemo(
+    () =>
+      rows.filter(
+        (row) =>
+          matchesPeriod(row.createdAtIso, period) &&
+          matchesQuery([row.orderNumber, row.status, row.shippingLabel], query),
+      ),
+    [rows, query, period],
   );
+
+  const hasRows = filtered.length > 0;
+  const subtitle = useMemo(() => {
+    if (!rows.length) return "Your order history";
+    if (filtered.length === rows.length) {
+      return `${rows.length} order${rows.length === 1 ? "" : "s"}`;
+    }
+    return `${filtered.length} of ${rows.length} order${rows.length === 1 ? "" : "s"}`;
+  }, [filtered.length, rows.length]);
 
   if (loading) return <LoadingCenter className="min-h-[30vh]" />;
 
   return (
     <>
-      <AccountPageHeader title="Orders" description={subtitle} />
+      <AccountPageHeader
+        title="Orders"
+        description={subtitle}
+        filters={
+          <AccountListFilters
+            query={query}
+            period={period}
+            onQueryChange={setQuery}
+            onPeriodChange={setPeriod}
+          />
+        }
+      />
       {error ? (
         <Alert variant="error" className="mb-4">
           {error}
@@ -54,8 +84,12 @@ export default function AccountOrdersClient() {
       ) : null}
       {!hasRows && !error ? (
         <EmptyState
-          title="No orders yet"
-          description="When you place an order, it will appear here."
+          title={rows.length ? "No matching orders" : "No orders yet"}
+          description={
+            rows.length
+              ? "Try a different search or time period."
+              : "When you place an order, it will appear here."
+          }
         />
       ) : null}
       {hasRows ? (
@@ -71,13 +105,15 @@ export default function AccountOrdersClient() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {filtered.map((row) => (
                 <tr key={row.id || row.orderNumber}>
                   <td className="font-semibold">{row.orderNumber || "—"}</td>
                   <td>{row.createdAt}</td>
                   <td>{row.status}</td>
                   <td>{row.itemCount}</td>
-                  <td className="whitespace-nowrap font-semibold">{row.formattedTotal || "—"}</td>
+                  <td className="whitespace-nowrap font-semibold">
+                    {row.formattedTotal ? <Money value={row.formattedTotal} /> : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

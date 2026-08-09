@@ -3,33 +3,34 @@
 import Link from "next/link";
 import Checkbox from "@/components/ui/Checkbox";
 
-/** @param {{ email: string; marketingOptIn: boolean; onEmailChange: (value: string) => void; onMarketingChange: (checked: boolean) => void; signedIn?: boolean }} props */
+/** @param {{ email: string; marketingOptIn: boolean; onEmailChange: (value: string) => void; onMarketingChange: (checked: boolean) => void; signedIn?: boolean; signInHref?: string }} props */
 export default function ContactCheckoutSection({
   email,
   marketingOptIn,
   onEmailChange,
   onMarketingChange,
   signedIn = false,
+  signInHref = "/sign-in?returnTo=%2Fcart%2Faddress",
 }) {
   return (
-    <section className="co-address-section">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="m-0 text-base font-bold text-neutral-900">Contact</h2>
+    <section className="co-address-section co-contact-section">
+      <div className="co-contact-section__head">
+        <h2 className="co-section-title">Contact</h2>
         {!signedIn ? (
-          <Link href="/sign-in?returnTo=%2Fcart%2Faddress" className="text-sm text-[#0b63ce] no-underline hover:underline">
+          <Link href={signInHref} className="co-contact-section__signin">
             Sign in
           </Link>
         ) : null}
       </div>
       <input
         type="text"
-        className="co-field"
+        className="co-field co-field--rounded"
         placeholder="Email or mobile phone number"
         value={email}
         onChange={(e) => onEmailChange(e.target.value)}
         autoComplete="email"
       />
-      <div className="mt-2">
+      <div className="co-contact-section__optin">
         <Checkbox
           checked={marketingOptIn}
           label="Email me with news and offers"

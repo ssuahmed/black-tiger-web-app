@@ -1,7 +1,7 @@
 import { HOME_APPLICATION_ACCORDIONS } from "@/data/homeApplicationCategories";
 import { HOME_PRODUCT_STRIP } from "@/data/homeProductStrip";
 import { HOME_SECTION_4 } from "@/data/homeSection4Content";
-import { routes } from "@/lib/routes";
+import { canonicalizeStorefrontHref, routes } from "@/lib/routes";
 import { blockCta, blockHtml, blockImage, blockJson, blockText } from "@/lib/content/blocks";
 
 /** @type {import("@/components/home/HomeFooter").HomeFooterData} */
@@ -27,32 +27,60 @@ export const DEFAULT_HOME_FOOTER = {
 };
 
 /**
+ * @param {import("@/components/home/HomeFooter").HomeFooterData} footer
+ * @returns {import("@/components/home/HomeFooter").HomeFooterData}
+ */
+function canonicalizeFooter(footer) {
+  if (!footer || typeof footer !== "object") return footer;
+  return {
+    ...footer,
+    navLinks: Array.isArray(footer.navLinks)
+      ? footer.navLinks.map((l) => ({
+          ...l,
+          href: canonicalizeStorefrontHref(l.href),
+        }))
+      : footer.navLinks,
+    contactCta: footer.contactCta
+      ? {
+          ...footer.contactCta,
+          href: canonicalizeStorefrontHref(footer.contactCta.href),
+        }
+      : footer.contactCta,
+  };
+}
+
+/**
  * Resolve all homepage CMS sections from Commerce API blocks.
  * @param {Record<string, unknown> | undefined} blocks
  */
 export function parseHomePage(blocks) {
+  console.log({ blocks });
+  const productStrip = blockJson(blocks, "product_strip.data", HOME_PRODUCT_STRIP);
   return {
     hero: {
       title: blockText(blocks, "hero.title", "The High-End Lubricants"),
       backgroundImage: blockImage(blocks, "hero.background_image", "/images/home/section-1.png"),
       cta: blockCta(blocks, "hero.cta", { label: "Ask AI", href: "#" }),
     },
-    productStrip: blockJson(blocks, "product_strip.data", HOME_PRODUCT_STRIP),
+    productStrip: Array.isArray(productStrip)
+      ? productStrip.map((p) =>
+          p && typeof p === "object"
+            ? { ...p, href: canonicalizeStorefrontHref(/** @type {{ href?: string }} */ (p).href) }
+            : p,
+        )
+      : productStrip,
     section3: {
       backgroundImage: blockImage(blocks, "section3.background_image", "/images/home/section-3.png"),
-      cta: blockCta(blocks, "section3.cta", { label: "Shop Now", href: "/shop" }),
+      cta: blockCta(blocks, "section3.cta", { label: "Shop Now", href: "/products" }),
     },
     section4: {
       backgroundImage: blockImage(
         blocks,
         "section4.background_image",
-        "/images/home/section-4/background.png",
+        HOME_SECTION_4.backgroundImage,
       ),
-      strongerImage: blockImage(
-        blocks,
-        "section4.stronger_image",
-        "/images/home/section-4/stronger.png",
-      ),
+      strongerImage: blockImage(blocks, "section4.stronger_image", HOME_SECTION_4.strongerImage),
+      imageRight: blockImage(blocks, "section4.image_right", HOME_SECTION_4.imageRight),
       eyebrow: blockText(blocks, "section4.eyebrow", HOME_SECTION_4.eyebrow),
       titleLine1: blockText(blocks, "section4.title_line1", HOME_SECTION_4.titleLine1),
       titleLine2: blockText(blocks, "section4.title_line2", HOME_SECTION_4.titleLine2),
@@ -67,6 +95,6 @@ export function parseHomePage(blocks) {
     section7Image: blockImage(blocks, "section7.image", "/images/home/section-7.png"),
     section8Image: blockImage(blocks, "section8.image", "/images/home/section-8.png"),
     hotSellingTitle: blockText(blocks, "hot_selling.title", "Hot Selling Products"),
-    footer: blockJson(blocks, "footer.data", DEFAULT_HOME_FOOTER),
+    footer: canonicalizeFooter(blockJson(blocks, "footer.data", DEFAULT_HOME_FOOTER)),
   };
 }

@@ -3,32 +3,113 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import RequireAuth from "@/components/auth/RequireAuth";
+import {
+  AddressesIcon,
+  CreditsIcon,
+  ListsIcon,
+  NotificationsIcon,
+  OrdersIcon,
+  PaymentsIcon,
+  ProfileIcon,
+  ReturnsIcon,
+  SecurityIcon,
+  SignOutIcon,
+  WireTransferIcon,
+} from "@/components/account/AccountNavIcons";
 import PageShell from "@/components/layout/PageShell";
 import TwoColumnLayout from "@/components/layout/TwoColumnLayout";
 import { AccountSummaryProvider, useAccountSummary } from "@/contexts/AccountSummaryContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { LoadingCenter } from "@/components/ui";
+import { LoadingCenter, Money } from "@/components/ui";
 
-/** @typedef {{ type: 'heading'; label: string } | { type: 'link'; href: string; label: string; badgeKey?: string }} NavPiece */
+/** @typedef {{ href: string; label: string; icon: import('react').ComponentType<{ className?: string }>; badgeKey?: string }} NavLink */
 
-/** @type {NavPiece[]} */
-const NAV_ITEMS = [
-  { type: "link", href: "/account/orders", label: "Orders", badgeKey: "orders" },
-  { type: "link", href: "/account/returns", label: "Returns", badgeKey: "returns" },
-  { type: "link", href: "/account/credits", label: "Credits" },
-  { type: "link", href: "/account/lists", label: "Lists", badgeKey: "lists" },
-  { type: "heading", label: "MY ACCOUNT" },
-  { type: "link", href: "/account/profile", label: "Profile" },
-  { type: "link", href: "/account/addresses", label: "Addresses" },
-  { type: "link", href: "/account/payments", label: "Payments" },
-  { type: "heading", label: "OTHERS" },
-  { type: "link", href: "/account/notifications", label: "Notifications" },
-  { type: "link", href: "/account/security", label: "Security" },
+/** @type {NavLink[]} */
+const PRIMARY_LINKS = [
+  { href: "/account/orders", label: "Orders", icon: OrdersIcon, badgeKey: "orders" },
+  {
+    href: "/account/wire-transfer",
+    label: "Link Wire Transfer to orders",
+    icon: WireTransferIcon,
+  },
+  { href: "/account/returns", label: "Returns", icon: ReturnsIcon, badgeKey: "returns" },
+  { href: "/account/credits", label: "Credits", icon: CreditsIcon },
+  { href: "/account/lists", label: "Lists", icon: ListsIcon, badgeKey: "lists" },
 ];
 
-const linkClass =
-  "block rounded px-3 py-2.5 text-base text-inherit no-underline hover:bg-primary/[0.08]";
-const linkActiveClass = "bg-primary/[0.12] font-semibold";
+/** @type {NavLink[]} */
+const ACCOUNT_LINKS = [
+  { href: "/account/profile", label: "Profile", icon: ProfileIcon },
+  { href: "/account/addresses", label: "Addresses", icon: AddressesIcon },
+  { href: "/account/payments", label: "Payments", icon: PaymentsIcon },
+];
+
+/** @type {NavLink[]} */
+const OTHER_LINKS = [
+  { href: "/account/notifications", label: "Notifications", icon: NotificationsIcon },
+  { href: "/account/security", label: "Security Settings", icon: SecurityIcon },
+];
+
+/**
+ * @param {{
+ *   item: NavLink;
+ *   pathname: string;
+ *   navBadges: Record<string, unknown>;
+ * }} props
+ */
+function NavItem({ item, pathname, navBadges }) {
+  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+  const Icon = item.icon;
+  const badge = item.badgeKey ? Number(navBadges[item.badgeKey]) : 0;
+
+  return (
+    <Link href={item.href} className={`acc-nav-link${active ? " is-active" : ""}`}>
+      <Icon className="acc-nav-link__icon" />
+      <span className="acc-nav-link__label">{item.label}</span>
+      {badge > 0 ? <span className="acc-nav-link__badge">{badge}</span> : null}
+    </Link>
+  );
+}
+
+/**
+ * @param {{
+ *   pathname: string;
+ *   navBadges: Record<string, unknown>;
+ *   onSignOut: () => void;
+ * }} props
+ */
+function AccountNavGroups({ pathname, navBadges, onSignOut }) {
+  return (
+    <>
+      <div className="acc-card acc-card--nav flex flex-col bg-white">
+        {PRIMARY_LINKS.map((item) => (
+          <NavItem key={item.href} item={item} pathname={pathname} navBadges={navBadges} />
+        ))}
+      </div>
+
+      <p className="acc-section-label">My Account</p>
+      <div className="acc-card acc-card--nav flex flex-col bg-white">
+        {ACCOUNT_LINKS.map((item) => (
+          <NavItem key={item.href} item={item} pathname={pathname} navBadges={navBadges} />
+        ))}
+      </div>
+
+      <p className="acc-section-label">Others</p>
+      <div className="acc-card acc-card--nav flex flex-col bg-white">
+        {OTHER_LINKS.map((item) => (
+          <NavItem key={item.href} item={item} pathname={pathname} navBadges={navBadges} />
+        ))}
+      </div>
+
+      <div className="acc-card acc-card--nav flex flex-col bg-white">
+        <button type="button" className="acc-nav-link acc-nav-link--signout" onClick={onSignOut}>
+          <SignOutIcon className="acc-nav-link__icon" />
+          <span className="acc-nav-link__label">Sign Out</span>
+        </button>
+      </div>
+    </>
+  );
+}
 
 /** @param {{ children: import('react').ReactNode }} props */
 function AccountShellInner({ children }) {
@@ -36,10 +117,15 @@ function AccountShellInner({ children }) {
   const router = useRouter();
   const { logout } = useAuth();
   const { summary, loading } = useAccountSummary();
+  const isBusinessThankYou = pathname === "/account/business/thankyou";
 
   async function onSignOut() {
     await logout();
     router.push("/sign-in");
+  }
+
+  if (isBusinessThankYou) {
+    return children;
   }
 
   const displayName = String(summary?.displayName ?? "Account");
@@ -47,108 +133,86 @@ function AccountShellInner({ children }) {
   const initials = String(
     summary?.avatar?.initials ?? (displayName.slice(0, 2).toUpperCase() || "BT"),
   );
-  const completion = summary?.profileCompletion?.percent;
+  const completion = typeof summary?.profileCompletion?.percent === "number"
+    ? Number(summary.profileCompletion.percent)
+    : null;
   const business = summary?.business;
   const navBadges = summary?.navBadges && typeof summary.navBadges === "object" ? summary.navBadges : {};
 
   const sidebar = (
-    <div className="rounded-md border border-neutral-200 bg-white">
-      <div className="border-b border-neutral-200 p-4">
-        <div className="flex items-center gap-3">
-          <span className="font-magistral flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-sm font-bold text-neutral-900">
+    <div className="acc-sidebar flex w-full max-w-[17.5rem] flex-col gap-3">
+      <div className="acc-card acc-card--profile bg-white">
+        <div className="acc-profile">
+          <span className="acc-profile__avatar" aria-hidden>
             {initials}
           </span>
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-neutral-900">{displayName}</p>
-            <p className="truncate text-xs text-neutral-600">{email}</p>
-            {typeof completion === "number" ? (
-              <p className="mt-1 mb-0 text-xs text-neutral-500">Profile {completion}% complete</p>
-            ) : null}
+          <div className="acc-profile__meta">
+            <p className="acc-profile__name">{displayName}!</p>
+            <p className="acc-profile__email">{email}</p>
           </div>
         </div>
+
+        {completion != null ? (
+          <div className="acc-completion">
+            <div className="acc-completion__row">
+              <span className="acc-completion__label">Profile Completion</span>
+              <span className="acc-completion__badge">{completion}%</span>
+            </div>
+            <div
+              className="acc-completion__track"
+              role="progressbar"
+              aria-valuenow={completion}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Profile completion"
+            >
+              <span className="acc-completion__fill" style={{ width: `${Math.max(0, Math.min(100, completion))}%` }} />
+            </div>
+          </div>
+        ) : null}
+
         {business ? (
-          <div className="mt-4 rounded border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
-            <p className="m-0 font-semibold text-neutral-900">{String(business.companyName ?? "B2B account")}</p>
-            <p className="mt-1 mb-0">
-              Credit limit: <strong>{String(business.creditLimit?.formatted ?? "—")}</strong>
+          <div className="acc-business">
+            <p className="acc-business__name">{String(business.companyName ?? "B2B account")}</p>
+            <p className="acc-business__credit">
+              Credit limit:{" "}
+              <strong>
+                {business.creditLimit?.formatted ? (
+                  <Money value={String(business.creditLimit.formatted)} />
+                ) : (
+                  "—"
+                )}
+              </strong>
             </p>
           </div>
         ) : null}
       </div>
-      <details className="group border-t border-neutral-200 lg:hidden">
-        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-neutral-800 marker:content-none [&::-webkit-details-marker]:hidden">
-          <span className="flex items-center justify-between gap-2">
-            Account menu
-            <span className="text-neutral-500 transition-transform group-open:rotate-180" aria-hidden>
-              ▾
-            </span>
+
+      <details className="acc-sidebar__mobile group lg:hidden">
+        <summary className="acc-sidebar__mobile-summary">
+          <span>Account menu</span>
+          <span className="acc-sidebar__mobile-chevron" aria-hidden>
+            ▾
           </span>
         </summary>
-        <nav className="flex flex-col border-t border-neutral-200 p-2">
-          {NAV_ITEMS.map((item) =>
-            item.type === "heading" ? (
-              <p key={`m-${item.label}`} className="px-3 pb-1 pt-3 text-xs font-bold tracking-wider text-neutral-500">
-                {item.label}
-              </p>
-            ) : (
-              <Link
-                key={`m-${item.href}`}
-                href={item.href}
-                className={`${linkClass} ${pathname === item.href ? linkActiveClass : ""}`}
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span>{item.label}</span>
-                  {item.badgeKey && Number(navBadges[item.badgeKey]) > 0 ? (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-neutral-900 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                      {Number(navBadges[item.badgeKey])}
-                    </span>
-                  ) : null}
-                </span>
-              </Link>
-            ),
-          )}
-          <button type="button" className={`${linkClass} mt-1 text-left text-primary`} onClick={() => void onSignOut()}>
-            Sign out
-          </button>
-        </nav>
+        <div className="acc-sidebar__stack mt-2 flex flex-col gap-3">
+          <AccountNavGroups pathname={pathname} navBadges={navBadges} onSignOut={() => void onSignOut()} />
+        </div>
       </details>
-      <nav className="hidden flex-col p-2 lg:flex">
-        {NAV_ITEMS.map((item) =>
-          item.type === "heading" ? (
-            <p key={item.label} className="px-3 pb-1 pt-3 text-xs font-bold tracking-wider text-neutral-500">
-              {item.label}
-            </p>
-          ) : (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`${linkClass} ${pathname === item.href ? linkActiveClass : ""}`}
-            >
-              <span className="flex items-center justify-between gap-2">
-                <span>{item.label}</span>
-                {item.badgeKey && Number(navBadges[item.badgeKey]) > 0 ? (
-                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-neutral-900 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                    {Number(navBadges[item.badgeKey])}
-                  </span>
-                ) : null}
-              </span>
-            </Link>
-          ),
-        )}
-        <button type="button" className={`${linkClass} mt-1 text-left text-primary`} onClick={() => void onSignOut()}>
-          Sign out
-        </button>
-      </nav>
+
+      <div className="acc-sidebar__stack hidden w-full flex-col gap-3 lg:flex">
+        <AccountNavGroups pathname={pathname} navBadges={navBadges} onSignOut={() => void onSignOut()} />
+      </div>
     </div>
   );
 
   if (loading && !summary) {
-    return <LoadingCenter className="min-h-[40vh]" />;
+    return <LoadingCenter className="min-h-[40vh] font-sf-pro" />;
   }
 
   return (
-    <PageShell variant="account">
-      <TwoColumnLayout preset="account" sidebar={sidebar}>
+    <PageShell variant="account" className="font-sf-pro">
+      <TwoColumnLayout preset="account" stickySidebar sidebar={sidebar}>
         <section>{children}</section>
       </TwoColumnLayout>
     </PageShell>

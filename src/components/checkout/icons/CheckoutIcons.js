@@ -124,6 +124,19 @@ export function CardMethodIcon({ className = "", title, ...rest }) {
   );
 }
 
+export function ApplePayMethodIcon({ className = "", title, ...rest }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...baseProps(className, title, rest)}>
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M9.2 10.1c0-.7.4-1.3.9-1.6-.1-.2-.5-.8-1.3-.8-.7 0-1.3.4-1.6.4-.5 0-1-.4-1.6-.4-1.2 0-2.3 1.1-2.3 2.8 0 1.7 1.1 3.7 2.2 3.7.5 0 .8-.3 1.4-.3s.9.3 1.4.3c1.1 0 1.8-1.7 1.8-1.7s-1.1-.4-1.1-1.7c0-1.1.8-1.4.9-1.5-.5-.7-1.2-.8-1.3-.8.5-.5 1.1-.4 1.3-.4.4 0 .7.1 1 0zM10.1 7.6c.3-.3.5-.8.4-1.3-.4 0-.9.3-1.2.6-.3.3-.5.8-.4 1.2.5.1.9-.2 1.2-.5z"
+        fill="currentColor"
+        transform="translate(6.5 2.5) scale(0.85)"
+      />
+    </svg>
+  );
+}
+
 export function CodMethodIcon({ className = "", title, ...rest }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...baseProps(className, title, rest)}>

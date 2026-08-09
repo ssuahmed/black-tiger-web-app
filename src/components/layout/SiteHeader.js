@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import HeaderAccountLink from "@/components/layout/HeaderAccountLink";
+import HeaderAskAiButton from "@/components/layout/HeaderAskAiButton";
 import CartIconLink from "@/components/layout/CartIconLink";
 import HeaderSearch from "@/components/layout/HeaderSearch";
 import MobileMainNav from "@/components/layout/MobileMainNav";
@@ -38,6 +39,7 @@ export default function SiteHeader() {
           <nav className="flex-y-center gap-1 sm:gap-2 md:gap-3" aria-label="Quick actions">
             <HeaderAccountLink />
             <CartIconLink className="icon-btn icon-btn--lg-only" />
+            <HeaderAskAiButton />
           </nav>
           <MobileMainNav />
         </div>

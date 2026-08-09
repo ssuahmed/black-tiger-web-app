@@ -9,10 +9,9 @@ import { routes } from "@/lib/routes";
 export default function HeaderSearch() {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
-  const urlQ =
-    pathname.startsWith("/shop") || pathname.startsWith("/products")
-      ? searchParams.get("q") || ""
-      : "";
+  const urlQ = pathname.startsWith("/products")
+    ? searchParams.get("q") || ""
+    : "";
   const [q, setQ] = useState(urlQ);
   const [open, setOpen] = useState(Boolean(urlQ));
   const inputRef = useRef(null);
@@ -62,7 +61,7 @@ export default function HeaderSearch() {
   return (
     <form
       ref={rootRef}
-      action={routes.shop}
+      action={routes.productsIndex}
       method="get"
       className={["site-header__search", open ? "is-open" : ""].filter(Boolean).join(" ")}
       role="search"

@@ -7,9 +7,9 @@ const VARIANT_CLASS = {
   marketing: "py-12 md:py-16",
   commerce: "",
   commerceLight: "bg-[#f2f2f2] text-neutral-900 [color-scheme:light]",
-  account: "bg-neutral-50 py-8 md:py-12",
+  account: "bg-[#edeef2] py-8 md:py-12",
   checkout: "bg-white py-6 pb-14 text-neutral-900",
-  pdp: "bg-white py-6 pb-14 text-neutral-900 [color-scheme:light]",
+  pdp: "bg-white pt-6 pb-14 text-neutral-900 [color-scheme:light]",
   auth: "flex flex-1 flex-col items-center justify-center px-4 py-10 md:py-14",
   none: "",
 };

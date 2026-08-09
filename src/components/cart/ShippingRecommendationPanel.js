@@ -20,7 +20,7 @@ export default function ShippingRecommendationPanel({ recommendation }) {
 
   return (
     <section className="mb-6 border border-neutral-300 bg-neutral-50 p-4" aria-label="Shipping efficiency">
-      <h2 className="font-magistral m-0 mb-3 text-base font-bold">AI Partial Pallet Optimizer</h2>
+      <h2 className="font-sf-pro m-0 mb-3 text-base font-bold">AI Partial Pallet Optimizer</h2>
       <div className="mb-3">
         <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
           <span className="font-semibold text-neutral-800">Shipping efficiency</span>

@@ -2,28 +2,43 @@
 
 import { useEffect, useRef, useState } from "react";
 import AddressBookModal from "@/components/cart/AddressBookModal";
+import AlternateRecipientModal, {
+  OTHER_PLACEHOLDER,
+} from "@/components/cart/AlternateRecipientModal";
 import ContactCheckoutSection from "@/components/cart/ContactCheckoutSection";
 import DeliverToFormModal from "@/components/cart/DeliverToFormModal";
 import {
   CheckIcon,
   ChevronRightIcon,
-  HomeIcon,
   PinIcon,
   PhoneIcon,
 } from "@/components/checkout/icons/CheckoutIcons";
 import { useAuth } from "@/contexts/AuthContext";
-import { createAccountAddress, listAccountAddresses } from "@/lib/api/account";
+import {
+  createAccountAddress,
+  getBusinessApplicationStatus,
+  listAccountAddresses,
+  updateAccountAddress,
+} from "@/lib/api/account";
 import { formatAddressPreview } from "@/lib/account/mapAccount.mjs";
 import { EMPTY_ADDRESS_FORM } from "@/lib/cart/addressFormDefaults";
 
 const inputClass = "co-field";
 
-/** @param {{ onSubmit?: (form: typeof EMPTY_ADDRESS_FORM) => void | Promise<void>; submitLabel?: string; busy?: boolean }} props */
+/** @param {{ onSubmit?: (form: typeof EMPTY_ADDRESS_FORM, extras?: { documents?: Record<string, File>; businessProfileComplete?: boolean }) => void | Promise<void>; submitLabel?: string; busy?: boolean }} props */
 export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
   const { user, isAuthenticated } = useAuth();
   const [form, setForm] = useState(EMPTY_ADDRESS_FORM);
   const [addressBookOpen, setAddressBookOpen] = useState(false);
   const [newAddressOpen, setNewAddressOpen] = useState(false);
+  const [otherRecipientOpen, setOtherRecipientOpen] = useState(false);
+  const [businessDocuments, setBusinessDocuments] = useState(
+    /** @type {Record<string, File>} */ ({}),
+  );
+  const [businessProfileComplete, setBusinessProfileComplete] = useState(false);
+  const [businessCompanyName, setBusinessCompanyName] = useState("");
+  const [businessStatusLabel, setBusinessStatusLabel] = useState("");
+  const [formError, setFormError] = useState("");
   const restoredPickup = useRef(false);
 
   useEffect(() => {
@@ -66,6 +81,7 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
           contact: { ...current.contact, email: user.email || current.contact.email },
           email: user.email || current.email,
           phone: phone || current.phone,
+          recipientName: name || current.recipientName,
           recipients: current.recipients.map((recipient, index) =>
             index === 0 ? { ...recipient, name: name || recipient.name, phone: phone || recipient.phone } : recipient,
           ),
@@ -93,8 +109,71 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
     };
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setBusinessProfileComplete(false);
+      setBusinessCompanyName("");
+      setBusinessStatusLabel("");
+      return;
+    }
+    let alive = true;
+    getBusinessApplicationStatus()
+      .then((status) => {
+        if (!alive || !status) return;
+        const isBiz =
+          status.segment === "b2b" ||
+          status.status === "submitted" ||
+          status.status === "approved" ||
+          Boolean(status.businessProfileComplete);
+        const complete = Boolean(status.businessProfileComplete);
+        setBusinessProfileComplete(complete);
+        setBusinessCompanyName(String(status.companyName || ""));
+        if (status.infoVerification === "verified" || status.status === "approved") {
+          setBusinessStatusLabel("verified");
+        } else if (complete || status.status === "submitted" || status.infoVerification === "pending") {
+          setBusinessStatusLabel("pending");
+        } else {
+          setBusinessStatusLabel("");
+        }
+        if (isBiz) {
+          setForm((current) =>
+            current.accountType === "business" ? current : { ...current, accountType: "business" },
+          );
+        }
+      })
+      .catch(() => {
+        if (!alive) return;
+        if (user?.segment === "b2b") {
+          setForm((current) =>
+            current.accountType === "business" ? current : { ...current, accountType: "business" },
+          );
+          if (user?.approvalStatus === "pending" || user?.approvalStatus === "approved") {
+            setBusinessProfileComplete(true);
+            setBusinessStatusLabel(user.approvalStatus === "approved" ? "verified" : "pending");
+          }
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [isAuthenticated, user]);
+
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function openDeliverTo() {
+    try {
+      const data = await listAccountAddresses();
+      const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+      if (items.length === 0) {
+        setNewAddressOpen(true);
+        return;
+      }
+    } catch {
+      // Fall through to the address book, which surfaces the load error.
+    }
+    setAddressBookOpen(true);
   }
 
   async function saveNewAddress(next) {
@@ -106,6 +185,7 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
         label: next.delivery.label || "Address",
         addressKind: next.delivery.addressKind,
         usageTypes: ["shipping", "billing"],
+        recipientName: next.recipientName || next.recipients?.[0]?.name || undefined,
         countryCode: next.countryCode,
         addressLine1: [next.buildingNo, next.street, next.district].filter(Boolean).join(", "),
         addressLine2: next.secondary || undefined,
@@ -125,25 +205,135 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
     }
   }
 
+  async function saveAlternateRecipient(value) {
+    const phoneDisplay = `${value.phoneCountry || ""}${value.phone || ""}`.trim();
+    setForm((current) => ({
+      ...current,
+      recipientName: value.name,
+      phoneCountry: value.phoneCountry || current.phoneCountry,
+      phone: value.phone,
+      recipients: current.recipients.map((row) => {
+        if (row.id === "primary") {
+          return {
+            ...row,
+            name: value.name,
+            phone: phoneDisplay,
+            email: value.email || "",
+            selected: true,
+          };
+        }
+        if (row.id === "other") {
+          return {
+            ...row,
+            name: OTHER_PLACEHOLDER,
+            phone: "",
+            email: "",
+            selected: false,
+          };
+        }
+        return row;
+      }),
+      delivery: { ...current.delivery, recipientId: "primary" },
+    }));
+    setOtherRecipientOpen(false);
+
+    const addressId = form.delivery?.selectedAddressId;
+    if (!isAuthenticated || !addressId) return;
+    try {
+      await updateAccountAddress(addressId, {
+        recipientName: value.name,
+        phone: phoneDisplay,
+      });
+    } catch {
+      // Local checkout state remains usable if address-book update fails.
+    }
+  }
+
+  function selectPrimaryRecipient() {
+    setForm((current) => {
+      const primary = current.recipients.find((row) => row.id === "primary");
+      return {
+        ...current,
+        recipientName: primary?.name || current.recipientName,
+        recipients: current.recipients.map((row) => ({
+          ...row,
+          selected: row.id === "primary",
+        })),
+        delivery: { ...current.delivery, recipientId: "primary" },
+      };
+    });
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
-    await onSubmit?.(form);
+    setFormError("");
+
+    const isPickup = form.delivery?.addressKind === "pickup";
+    const hasDelivery =
+      isPickup ||
+      Boolean(String(form.delivery?.addressPreview || "").trim()) ||
+      Boolean(String(form.location?.formattedAddress || "").trim()) ||
+      Boolean(form.delivery?.selectedAddressId);
+
+    if (!hasDelivery) {
+      setFormError("Choose a delivery address from the map or your saved addresses.");
+      return;
+    }
+
+    const needsBusinessFields =
+      form.accountType === "business" && !businessProfileComplete;
+
+    if (needsBusinessFields) {
+      const orgName = String(form.business?.organizationName || "").trim();
+      if (!orgName) {
+        setFormError("Organization name is required for a business account.");
+        return;
+      }
+      const crNumber = String(form.business?.crNumber || "").trim();
+      const vatNumber = String(form.business?.vatNumber || "").trim();
+      if (!crNumber) {
+        setFormError("Certificate of Registration Number is required.");
+        return;
+      }
+      if (!vatNumber) {
+        setFormError("VAT Registration Certificate Number is required.");
+        return;
+      }
+      const requiredDocs = [
+        ["certificate_of_registration", "Certificate of Registration"],
+        ["vat_registration_certificate", "VAT registration Certificate"],
+        ["national_address_registration", "National Address Registration"],
+      ];
+      for (const [documentType, label] of requiredDocs) {
+        if (!(businessDocuments[documentType] instanceof File)) {
+          setFormError(`${label} is required.`);
+          return;
+        }
+      }
+    }
+
+    await onSubmit?.(form, {
+      documents: businessDocuments,
+      businessProfileComplete,
+      companyName: businessCompanyName,
+    });
   }
 
   const selectedRecipient = form.delivery.recipientId;
-  const selectedAddress = Boolean(form.delivery.selectedAddressId);
   const isBusiness = form.accountType === "business";
+  const showBusinessForm = isBusiness && !businessProfileComplete;
   const ctaLabel =
-    submitLabel || (isBusiness ? "Submit for verification" : "Continue to shipping");
-  const deliverLabel = form.delivery.label
-    ? form.delivery.label.toLowerCase().startsWith("deliver")
-      ? form.delivery.label
-      : `Deliver to ${form.delivery.label}`
-    : "Choose a delivery address";
+    submitLabel ||
+    (showBusinessForm ? "Submit for verification" : "Continue to shipping");
 
   return (
     <>
-      <form className="co-address-form text-neutral-900" onSubmit={handleSubmit}>
+      <form className="co-address-form text-neutral-900" onSubmit={handleSubmit} noValidate>
+        {formError ? (
+          <p className="co-address-form__error" role="alert">
+            {formError}
+          </p>
+        ) : null}
         <ContactCheckoutSection
           email={form.contact.email}
           marketingOptIn={form.contact.marketingOptIn}
@@ -164,25 +354,34 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
         />
 
         <section className="co-address-section">
-          <h2 className="m-0 mb-3 text-base font-bold">Delivery</h2>
-          <button
-            type="button"
-            className="co-address-card co-address-card--deliver mb-5 flex w-full items-center gap-3 text-left"
-            onClick={() => setAddressBookOpen(true)}
-          >
-            {form.delivery.addressKind === "pickup" ? (
-              <PinIcon className="size-6 shrink-0" />
-            ) : (
-              <HomeIcon className="size-6 shrink-0" />
-            )}
-            <span className="min-w-0 flex-1">
-              <strong className="block text-sm">{deliverLabel}</strong>
-              <span className="mt-1 block text-sm leading-snug text-neutral-600">
-                {form.delivery.addressPreview || "Saved addresses, a new address, or warehouse pickup"}
+          <h2 className="co-section-title">Delivery</h2>
+          <div className="co-deliver-box">
+            <p className="co-deliver-box__eyebrow">Address</p>
+            <button
+              type="button"
+              className="co-deliver-box__trigger"
+              onClick={() => {
+                void openDeliverTo();
+              }}
+            >
+              <PinIcon className="co-deliver-box__pin" />
+              <span className="co-deliver-box__copy">
+                <strong className="co-deliver-box__label">
+                  {form.delivery.label ? (
+                    <>
+                      Deliver to <span>{form.delivery.label.replace(/^Deliver to\s+/i, "")}</span>
+                    </>
+                  ) : (
+                    "Choose a delivery address"
+                  )}
+                </strong>
+                <span className="co-deliver-box__preview">
+                  {form.delivery.addressPreview || "Pin your location on the map or choose a saved address"}
+                </span>
               </span>
-            </span>
-            <ChevronRightIcon className="size-5 shrink-0 text-neutral-500" />
-          </button>
+              <ChevronRightIcon className="co-deliver-box__chevron" />
+            </button>
+          </div>
 
           <div className="co-recipient-panel">
             <h3 className="co-recipient-panel__title">Who will receive this order?</h3>
@@ -198,12 +397,13 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
                       "co-recipient-card",
                       active ? "co-recipient-card--active" : "",
                     ].join(" ")}
-                    onClick={() =>
-                      setForm((current) => ({
-                        ...current,
-                        delivery: { ...current.delivery, recipientId: recipient.id },
-                      }))
-                    }
+                    onClick={() => {
+                      if (isOther) {
+                        setOtherRecipientOpen(true);
+                        return;
+                      }
+                      selectPrimaryRecipient();
+                    }}
                   >
                     {isOther ? (
                       <PhoneIcon className="co-recipient-card__phone" />
@@ -213,8 +413,12 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
                       </span>
                     )}
                     <span className="co-recipient-card__copy">
-                      <strong>{recipient.name || "Primary contact"}</strong>
-                      {recipient.phone ? <span>{recipient.phone}</span> : null}
+                      <strong>
+                        {isOther
+                          ? OTHER_PLACEHOLDER
+                          : recipient.name || "Primary contact"}
+                      </strong>
+                      {!isOther && recipient.phone ? <span>{recipient.phone}</span> : null}
                     </span>
                     {active ? (
                       <span className="co-recipient-card__check">
@@ -238,18 +442,44 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
                   name="accountType"
                   checked={form.accountType === value}
                   onChange={() => update("accountType", value)}
+                  disabled={businessProfileComplete && value === "personal"}
                 />
                 <span>{label}</span>
               </label>
             ))}
           </div>
+          {isBusiness && businessProfileComplete ? (
+            <p className="co-business-submitted" role="status">
+              {businessCompanyName ? (
+                <>
+                  Business profile for <strong>{businessCompanyName}</strong> is{" "}
+                  {businessStatusLabel === "verified" ? "verified" : "submitted for verification"}.
+                </>
+              ) : (
+                <>
+                  Business information has already been{" "}
+                  {businessStatusLabel === "verified" ? "verified" : "submitted for verification"}.
+                </>
+              )}
+            </p>
+          ) : null}
         </section>
 
-        {!selectedAddress && form.delivery.addressKind !== "pickup" && !isBusiness ? (
-          <AddressFields form={form} update={update} />
+        {showBusinessForm ? (
+          <BusinessFields
+            business={form.business}
+            setForm={setForm}
+            documents={businessDocuments}
+            onDocumentChange={(documentType, file) => {
+              setBusinessDocuments((current) => {
+                const next = { ...current };
+                if (file) next[documentType] = file;
+                else delete next[documentType];
+                return next;
+              });
+            }}
+          />
         ) : null}
-
-        {isBusiness ? <BusinessFields business={form.business} setForm={setForm} /> : null}
 
         <button type="submit" className="co-cta co-cta--blue co-address-submit" disabled={busy}>
           {ctaLabel}
@@ -275,42 +505,30 @@ export default function AddressForm({ onSubmit, submitLabel, busy = false }) {
         initialValue={form}
         onSave={saveNewAddress}
       />
+      <AlternateRecipientModal
+        open={otherRecipientOpen}
+        onClose={() => setOtherRecipientOpen(false)}
+        initialValue={{
+          name: "",
+          phone: "",
+          email: "",
+          phoneCountry: form.phoneCountry,
+        }}
+        onSave={saveAlternateRecipient}
+      />
     </>
   );
 }
 
-function AddressFields({ form, update }) {
-  return (
-    <section className="co-address-section">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {[
-          ["buildingNo", "Building No."],
-          ["street", "Street"],
-          ["secondary", "Secondary"],
-          ["district", "District"],
-          ["postalCode", "Postal Code"],
-          ["city", "City"],
-          ["email", "email"],
-          ["phone", "Phone"],
-        ].map(([key, label]) => (
-          <input
-            key={key}
-            className={inputClass}
-            placeholder={label}
-            value={form[key]}
-            onChange={(event) => update(key, event.target.value)}
-            required={key === "street" || key === "city"}
-            type={key === "email" ? "email" : key === "phone" ? "tel" : "text"}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function BusinessFields({ business, setForm }) {
+function BusinessFields({ business, setForm, documents = {}, onDocumentChange }) {
   const update = (key, value) =>
     setForm((current) => ({ ...current, business: { ...current.business, [key]: value } }));
+
+  const documentRows = [
+    ["certificate_of_registration", "Certificate of Registration"],
+    ["vat_registration_certificate", "VAT registration Certificate"],
+    ["national_address_registration", "National Address Registration"],
+  ];
 
   return (
     <>
@@ -343,6 +561,8 @@ function BusinessFields({ business, setForm }) {
               placeholder={label}
               value={business[key]}
               onChange={(event) => update(key, event.target.value)}
+              required={key !== "organizationNameAr"}
+              aria-required={key !== "organizationNameAr"}
             />
           ))}
         </div>
@@ -367,48 +587,38 @@ function BusinessFields({ business, setForm }) {
       <section className="co-biz-block">
         <h2 className="co-biz-block__heading">Official Documents</h2>
         <div className="co-biz-panel co-biz-panel--docs">
-          {[
-            "Certificate of Registration",
-            "VAT registration Certificate",
-            "National Address Registration",
-          ].map((label) => (
-            <div key={label} className="co-docs-panel__row">
-              <span className="co-docs-panel__label">{label}</span>
-              <label className="co-docs-panel__btn">
-                Choose File
-                <input
-                  type="file"
-                  className="sr-only"
-                  accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*"
-                />
-              </label>
-            </div>
-          ))}
+          {documentRows.map(([documentType, label]) => {
+            const file = documents[documentType];
+            return (
+              <div key={documentType} className="co-docs-panel__row">
+                <span className="co-docs-panel__label">
+                  {label}
+                  <span className="co-docs-panel__required" aria-hidden>
+                    *
+                  </span>
+                  {file ? <span className="co-docs-panel__file-name">{file.name}</span> : null}
+                </span>
+                <label className="co-docs-panel__btn">
+                  {file ? "Change file" : "Choose File"}
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                    onChange={(event) => {
+                      const next = event.target.files?.[0] || null;
+                      if (next && next.size > 10 * 1024 * 1024) {
+                        event.target.value = "";
+                        window.alert("File must be 10 MB or smaller.");
+                        return;
+                      }
+                      onDocumentChange?.(documentType, next);
+                    }}
+                  />
+                </label>
+              </div>
+            );
+          })}
           <p className="co-docs-panel__hint">PDF or JPEG format, size limit of 10 MB</p>
-        </div>
-      </section>
-
-      <section className="co-address-section">
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            ["buildingNo", "Building No."],
-            ["street", "Street"],
-            ["secondary", "Secondary"],
-            ["district", "District"],
-            ["postalCode", "Postal Code"],
-            ["city", "City"],
-            ["email", "email"],
-            ["phone", "Phone"],
-          ].map(([key, label]) => (
-            <input
-              key={key}
-              className={inputClass}
-              placeholder={label}
-              value={business[key]}
-              onChange={(event) => update(key, event.target.value)}
-              type={key === "email" ? "email" : key === "phone" ? "tel" : "text"}
-            />
-          ))}
         </div>
       </section>
     </>
@@ -429,6 +639,15 @@ function recipientInitials(name) {
 
 function mergeSavedAddress(form, address) {
   const line1 = String(address.addressLine1 || address.street || "");
+  const recipientName = String(
+    address.recipientName ||
+      address.contactName ||
+      address.partnerName ||
+      form.recipientName ||
+      form.recipients?.[0]?.name ||
+      "",
+  ).trim();
+  const phone = String(address.phone || form.phone || form.recipients?.[0]?.phone || "").trim();
   return {
     ...form,
     countryCode: String(address.countryCode || form.countryCode || "SA"),
@@ -442,7 +661,8 @@ function mergeSavedAddress(form, address) {
     landmark: String(address.landmark || ""),
     nationalAddress: String(address.nationalAddress || ""),
     companyFloor: String(address.companyFloor || ""),
-    phone: String(address.phone || form.phone),
+    phone: phone || form.phone,
+    recipientName: recipientName || form.recipientName,
     warehouseSlug: String(address.warehouseSlug || ""),
     location: {
       lat: address.latitude ?? address.lat ?? null,
@@ -457,5 +677,14 @@ function mergeSavedAddress(form, address) {
       selectedAddressId: String(address.id || ""),
       addressKind: String(address.addressKind || "home").toLowerCase(),
     },
+    recipients: (form.recipients || EMPTY_ADDRESS_FORM.recipients).map((row, index) =>
+      index === 0
+        ? {
+            ...row,
+            name: recipientName || row.name,
+            phone: phone || row.phone,
+          }
+        : row,
+    ),
   };
 }

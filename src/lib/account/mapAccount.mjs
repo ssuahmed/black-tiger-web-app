@@ -20,6 +20,7 @@ export function normalizeOrderRow(row) {
     id: String(row.id ?? ""),
     orderNumber: String(row.orderNumber ?? ""),
     status: formatOrderStatus(String(row.status ?? "")),
+    createdAtIso: row.createdAt ? String(row.createdAt) : "",
     createdAt: formatAccountDate(row.createdAt ? String(row.createdAt) : null),
     itemCount: Number(row.itemCount ?? 0),
     formattedTotal: String(row.formattedTotal ?? ""),

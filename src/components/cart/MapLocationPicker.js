@@ -4,8 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { CrosshairIcon, PinIcon } from "@/components/checkout/icons/CheckoutIcons";
 import * as checkoutApi from "@/lib/api/checkout";
 import { loadGoogleMaps } from "@/lib/maps/loadGoogleMaps";
+import { resolveAddressWithGoogleMaps } from "@/lib/maps/resolveAddressWithGoogleMaps";
 
 const DEFAULT_LOCATION = { lat: 24.7136, lng: 46.6753 };
+const RESOLVE_DEBOUNCE_MS = 450;
+const PLACEHOLDER_TITLES = new Set(["selected location", "current location"]);
 
 /**
  * @param {{
@@ -16,6 +19,8 @@ const DEFAULT_LOCATION = { lat: 24.7136, lng: 46.6753 };
 export default function MapLocationPicker({ value, onConfirm }) {
   const mapNode = useRef(null);
   const mapRef = useRef(null);
+  const resolveSeq = useRef(0);
+  const idleTimer = useRef(null);
   const initialCoordinates = useRef({
     lat: value?.lat ?? DEFAULT_LOCATION.lat,
     lng: value?.lng ?? DEFAULT_LOCATION.lng,
@@ -46,7 +51,7 @@ export default function MapLocationPicker({ value, onConfirm }) {
         };
         const map = new maps.Map(mapNode.current, {
           center,
-          zoom: 15,
+          zoom: 17,
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
@@ -55,28 +60,43 @@ export default function MapLocationPicker({ value, onConfirm }) {
         idleListener = map.addListener("idle", () => {
           const next = map.getCenter();
           if (!next) return;
-          setLocation((current) => ({
-            ...current,
-            lat: next.lat(),
-            lng: next.lng(),
-          }));
+          const lat = next.lat();
+          const lng = next.lng();
+          setLocation((current) => ({ ...current, lat, lng }));
+          if (idleTimer.current) window.clearTimeout(idleTimer.current);
+          idleTimer.current = window.setTimeout(() => {
+            void resolve({ lat, lng }, { quiet: true });
+          }, RESOLVE_DEBOUNCE_MS);
         });
       })
       .catch(() => setMapsAvailable(false));
     return () => {
       alive = false;
+      if (idleTimer.current) window.clearTimeout(idleTimer.current);
       if (idleListener && window.google?.maps?.event) {
         window.google.maps.event.removeListener(idleListener);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function resolve(input) {
-    setBusy(true);
-    setError("");
+  /**
+   * @param {{ lat?: number; lng?: number; query?: string; placeId?: string }} input
+   * @param {{ quiet?: boolean; pan?: boolean }} [opts]
+   */
+  async function resolve(input, opts = {}) {
+    const seq = ++resolveSeq.current;
+    if (!opts.quiet) {
+      setBusy(true);
+      setError("");
+    }
     try {
-      const data = await checkoutApi.resolveCheckoutAddress(input);
-      const address = data?.address ?? data?.item ?? data ?? {};
+      let address = await resolveAddressWithGoogleMaps(input);
+      if (!address) {
+        const data = await checkoutApi.resolveCheckoutAddress(input);
+        address = data?.address ?? data?.item ?? data ?? {};
+      }
+      if (seq !== resolveSeq.current) return null;
       const nextLocation = {
         lat: Number(address?.latitude ?? address?.lat ?? input.lat ?? location.lat),
         lng: Number(address?.longitude ?? address?.lng ?? input.lng ?? location.lng),
@@ -84,18 +104,25 @@ export default function MapLocationPicker({ value, onConfirm }) {
         formattedAddress: String(address?.formattedAddress ?? address?.address ?? query),
         title: shortTitle(address),
         subtitle: shortSubtitle(address),
+        ...pickAddressFields(address),
       };
       setLocation(nextLocation);
-      setQuery(nextLocation.formattedAddress);
-      if (mapRef.current) {
+      if (!opts.quiet || input.query) {
+        setQuery(nextLocation.formattedAddress);
+      }
+      if (opts.pan && mapRef.current) {
         mapRef.current.panTo({ lat: nextLocation.lat, lng: nextLocation.lng });
+        mapRef.current.setZoom?.(17);
       }
       return { ...address, ...nextLocation };
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not find this location.");
+      if (seq !== resolveSeq.current) return null;
+      if (!opts.quiet) {
+        setError(err instanceof Error ? err.message : "Could not find this location.");
+      }
       return null;
     } finally {
-      setBusy(false);
+      if (seq === resolveSeq.current && !opts.quiet) setBusy(false);
     }
   }
 
@@ -106,7 +133,9 @@ export default function MapLocationPicker({ value, onConfirm }) {
     }
     setBusy(true);
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => void resolve({ lat: coords.latitude, lng: coords.longitude }),
+      ({ coords }) => {
+        void resolve({ lat: coords.latitude, lng: coords.longitude }, { pan: true });
+      },
       () => {
         setBusy(false);
         setError("Location permission was not granted.");
@@ -131,7 +160,7 @@ export default function MapLocationPicker({ value, onConfirm }) {
             className="co-map-picker__search"
             onSubmit={(event) => {
               event.preventDefault();
-              if (query.trim()) void resolve({ query: query.trim() });
+              if (query.trim()) void resolve({ query: query.trim() }, { pan: true });
             }}
           >
             <span className="co-map-picker__search-icon" aria-hidden>
@@ -141,7 +170,7 @@ export default function MapLocationPicker({ value, onConfirm }) {
               className="co-map-picker__search-input"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search for your national address, building..."
+              placeholder="Search for your short address, building..."
               aria-label="Search address"
             />
           </form>
@@ -196,22 +225,55 @@ export default function MapLocationPicker({ value, onConfirm }) {
   );
 }
 
+function pickAddressFields(address) {
+  return {
+    placeName: usableName(address?.placeName || address?.name),
+    buildingNo: String(address?.buildingNo || ""),
+    street: String(address?.street || ""),
+    secondary: String(address?.secondary || ""),
+    neighborhood: String(address?.neighborhood || ""),
+    district: String(address?.district || ""),
+    city: String(address?.city || ""),
+    stateProvince: String(address?.stateProvince || address?.stateCode || ""),
+    stateCode: String(address?.stateCode || ""),
+    postalCode: String(address?.postalCode || ""),
+    countryCode: String(address?.countryCode || ""),
+    country: String(address?.country || ""),
+    landmark: usableName(address?.landmark || address?.placeName || address?.name),
+    nationalAddress: String(address?.nationalAddress || ""),
+  };
+}
+
+function usableName(value) {
+  const name = String(value || "").trim();
+  if (!name || PLACEHOLDER_TITLES.has(name.toLowerCase())) return "";
+  return name;
+}
+
 function shortTitle(address) {
-  const formatted = String(address?.formattedAddress || "");
-  const national = String(address?.nationalAddress || "");
+  const placeName = usableName(address?.placeName || address?.name || address?.landmark);
+  if (placeName) return placeName;
+  const national = String(address?.nationalAddress || "").trim();
   if (national) return national;
   if (address?.buildingNo && address?.street) return `${address.buildingNo} ${address.street}`;
+  if (address?.street) return String(address.street);
+  const formatted = String(address?.formattedAddress || "");
   if (formatted) return formatted.split(",")[0]?.trim() || formatted;
   return "Selected location";
 }
 
 function shortSubtitle(address) {
+  const placeName = usableName(address?.placeName || address?.name);
   const parts = [
-    address?.district,
+    address?.street && address?.buildingNo
+      ? `${address.buildingNo} ${address.street}`
+      : address?.street,
+    address?.district || address?.neighborhood,
     address?.city,
-    countryName(address?.countryCode),
+    countryName(address?.countryCode) || address?.country,
   ].filter(Boolean);
-  if (parts.length) return parts.join(" - ");
+  const filtered = parts.filter((part) => String(part).trim() !== placeName);
+  if (filtered.length) return filtered.join(" · ");
   return String(address?.formattedAddress || "")
     .split(",")
     .slice(1)
@@ -223,5 +285,10 @@ function countryName(code) {
   if (code === "SA") return "Saudi Arabia";
   if (code === "SN") return "Senegal";
   if (code === "AE") return "United Arab Emirates";
+  if (code === "BH") return "Bahrain";
+  if (code === "KW") return "Kuwait";
+  if (code === "OM") return "Oman";
+  if (code === "US") return "United States";
+  if (code === "GB") return "United Kingdom";
   return code || "";
 }

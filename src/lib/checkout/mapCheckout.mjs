@@ -26,17 +26,30 @@ export function normalizeShippingOption(option) {
       priceFormatted: "",
       recommended: false,
       reason: null,
+      qty: 0,
+      palletsLoaded: 0,
+      unitPrice: 0,
+      lineTotal: 0,
+      isFleetTotal: false,
     };
   }
   const price = option.price && typeof option.price === "object" ? option.price : {};
+  const unitPrice = Number(option.unitPrice ?? price.amount ?? 0);
+  const qty = Number(option.qty ?? 0);
+  const lineTotal = Number(option.lineTotal ?? unitPrice * qty);
   return {
     id: String(option.id ?? ""),
     label: String(option.label ?? ""),
     etaDays: typeof option.etaDays === "number" ? option.etaDays : null,
-    priceAmount: Number(price.amount ?? 0),
+    priceAmount: unitPrice,
     priceFormatted: String(price.formatted ?? ""),
     recommended: option.recommended === true,
     reason: option.reason ? String(option.reason) : null,
+    qty,
+    palletsLoaded: Number(option.palletsLoaded ?? 0),
+    unitPrice,
+    lineTotal,
+    isFleetTotal: option.isFleetTotal === true || String(option.id) === "fleet-auto",
   };
 }
 
@@ -53,6 +66,10 @@ export function normalizeShippingRecommendation(recommendation) {
     recommendation.palletBreakdown && typeof recommendation.palletBreakdown === "object"
       ? recommendation.palletBreakdown
       : null;
+  const fleetPlan =
+    recommendation.fleetPlan && typeof recommendation.fleetPlan === "object"
+      ? recommendation.fleetPlan
+      : null;
   return {
     score: Number(efficiency.score ?? recommendation.utilizationPct ?? 0),
     utilizationPct: Number(efficiency.utilizationPct ?? efficiency.score ?? 0),
@@ -65,6 +82,7 @@ export function normalizeShippingRecommendation(recommendation) {
       ? recommendation.suggestedProducts
       : [],
     palletBreakdown,
+    fleetPlan,
   };
 }
 

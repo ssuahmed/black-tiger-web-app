@@ -6,7 +6,8 @@ import CartLineItem from "@/components/cart/CartLineItem";
 import CartOrderSummary from "@/components/cart/CartOrderSummary";
 import CheckoutLayout from "@/components/cart/CheckoutLayout";
 import CheckoutStepTitle from "@/components/cart/CheckoutStepTitle";
-import ShippingRecommendationPanel from "@/components/cart/ShippingRecommendationPanel";
+// Kept for later: AI Partial Pallet Optimizer panel
+// import ShippingRecommendationPanel from "@/components/cart/ShippingRecommendationPanel";
 import { Alert, LoadingCenter } from "@/components/ui";
 import { useCart } from "@/contexts/CartContext";
 import { useCheckoutAuth } from "@/hooks/useCheckoutAuth";
@@ -43,12 +44,29 @@ export default function ShippingPageClient() {
   });
 
   const selectedShipping = useMemo(() => {
-    const row = shippingOpts.find((o) => o && typeof o === "object" && String(o.id) === shippingOptionId);
-    return normalizeShippingOption(row && typeof row === "object" ? row : {});
+    const fleet = shippingOpts.find(
+      (o) =>
+        o &&
+        typeof o === "object" &&
+        (o.isFleetTotal === true || String(o.id) === "fleet-auto" || String(o.id) === shippingOptionId),
+    );
+    const row =
+      shippingOpts.find((o) => o && typeof o === "object" && String(o.id) === "fleet-auto") ||
+      fleet ||
+      shippingOpts.find((o) => o && typeof o === "object" && String(o.id) === shippingOptionId);
+    const normalized = normalizeShippingOption(row && typeof row === "object" ? row : {});
+    if (normalized.isFleetTotal || normalized.id === "fleet-auto") {
+      return {
+        ...normalized,
+        priceAmount: normalized.lineTotal || normalized.priceAmount,
+        priceFormatted: normalized.priceFormatted,
+      };
+    }
+    return normalized;
   }, [shippingOpts, shippingOptionId]);
 
   const shippingTotals = useMemo(() => {
-    const shipping = selectedShipping.priceAmount;
+    const shipping = Number(selectedShipping.priceAmount || 0);
     const discount = Number(totals.discount || 0);
     const vat = Number(totals.vat || Math.round((totals.subtotal - discount) * 0.15 * 100) / 100);
     const grandTotal = totals.subtotal - discount + vat + shipping;
@@ -66,7 +84,10 @@ export default function ShippingPageClient() {
   }, [totals, selectedShipping]);
 
   const shippingMethods = useMemo(
-    () => shippingOpts.map((row) => normalizeShippingOption(row && typeof row === "object" ? row : {})),
+    () =>
+      shippingOpts
+        .map((row) => normalizeShippingOption(row && typeof row === "object" ? row : {}))
+        .filter((m) => m.id && !m.isFleetTotal),
     [shippingOpts],
   );
 
@@ -103,16 +124,23 @@ export default function ShippingPageClient() {
         const { options, recommendation: rec } = unwrapShippingOptionsPayload(payload);
         setShippingOpts(options);
         setRecommendation(rec);
-        const savedId = summary?.shippingOptionId ? String(summary.shippingOptionId) : "";
+        const fleetAuto = options.find(
+          (row) =>
+            row &&
+            typeof row === "object" &&
+            (row.isFleetTotal === true || String(row.id) === "fleet-auto"),
+        );
         const recommended = options.find((row) => row && typeof row === "object" && row.recommended === true);
         const initial =
-          savedId && options.some((row) => row && typeof row === "object" && String(row.id) === savedId)
-            ? savedId
-            : recommended && typeof recommended === "object" && recommended.id
-              ? String(recommended.id)
-              : options[0] && typeof options[0] === "object" && options[0].id
-                ? String(options[0].id)
-                : "";
+          fleetAuto && typeof fleetAuto === "object" && fleetAuto.id
+            ? String(fleetAuto.id)
+            : savedId && options.some((row) => row && typeof row === "object" && String(row.id) === savedId)
+              ? savedId
+              : recommended && typeof recommended === "object" && recommended.id
+                ? String(recommended.id)
+                : options[0] && typeof options[0] === "object" && options[0].id
+                  ? String(options[0].id)
+                  : "";
         setShippingOptionId(initial);
       } catch {
         if (!alive) return;
@@ -152,6 +180,8 @@ export default function ShippingPageClient() {
 
   return (
     <CheckoutLayout
+      className="co-shipping-page font-sf-pro"
+      preset="checkoutShipping"
       sidebar={
         <CartOrderSummary
           variant="shipping"
@@ -168,7 +198,11 @@ export default function ShippingPageClient() {
             id: m.id,
             label: m.label,
             priceFormatted: m.priceFormatted,
+            priceAmount: m.priceAmount,
             etaDays: m.etaDays,
+            qty: m.qty,
+            palletsLoaded: m.palletsLoaded,
+            lineTotal: m.lineTotal,
           }))}
           selectedShippingId={shippingOptionId}
           efficiencyScore={normalizedRecommendation?.score ?? null}
@@ -182,44 +216,9 @@ export default function ShippingPageClient() {
           {error}
         </Alert>
       ) : null}
+      {/* Kept for later: AI Partial Pallet Optimizer
       <ShippingRecommendationPanel recommendation={normalizedRecommendation} />
-      <section className="mb-6">
-        <h2 className="font-magistral m-0 mb-3 text-base font-bold">Shipping method</h2>
-        <div className="grid gap-2">
-          {shippingMethods.map((method) => (
-            <label
-              key={method.id}
-              className={[
-                "flex cursor-pointer items-center justify-between gap-3 border px-4 py-3",
-                shippingOptionId === method.id ? "border-neutral-900 shadow-[0_0_0_1px_#171717]" : "border-neutral-300",
-              ].join(" ")}
-            >
-              <span className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="shippingOption"
-                  value={method.id}
-                  checked={shippingOptionId === method.id}
-                  onChange={() => setShippingOptionId(method.id)}
-                  disabled={busy}
-                />
-                <span>
-                  {method.label}
-                  {method.recommended ? (
-                    <span className="ml-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">
-                      Recommended
-                    </span>
-                  ) : null}
-                  {method.etaDays != null ? (
-                    <span className="ml-1 text-neutral-500">· Est. {method.etaDays} days</span>
-                  ) : null}
-                </span>
-              </span>
-              {method.priceFormatted ? <span className="text-sm font-semibold">{method.priceFormatted}</span> : null}
-            </label>
-          ))}
-        </div>
-      </section>
+      */}
       <div>
         {lines.map((line) => (
           <CartLineItem key={`ship-${line.id}`} line={line} />

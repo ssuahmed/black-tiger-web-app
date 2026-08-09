@@ -1,7 +1,9 @@
 /** Canonical app paths — use for nav, footer, and redirects. */
 export const routes = {
   home: "/",
-  shop: "/shop",
+  homeV2: "/homev2",
+  /** @deprecated Catalog lives on /products — kept as alias for older call sites. */
+  shop: "/products",
   productsIndex: "/products",
   productsDefault: "/products",
   product: (slug) => `/products/${encodeURIComponent(slug)}`,
@@ -17,7 +19,10 @@ export const routes = {
   warehouse: (slug) => `/warehouses/${encodeURIComponent(slug)}`,
   account: "/account",
   accountOrders: "/account/orders",
+  accountProfile: "/account/profile",
+  accountWireTransfer: "/account/wire-transfer",
   accountAddresses: "/account/addresses",
+  accountBusinessThankYou: "/account/business/thankyou",
   signIn: "/sign-in",
   signUp: "/sign-in?intent=register",
   forgotPassword: "/forgot-password",
@@ -32,3 +37,20 @@ export const routes = {
   shippingPolicy: "/terms",
   components: "/components",
 };
+
+/**
+ * Rewrite legacy storefront paths (e.g. CMS `/shop`) to the products catalog.
+ * @param {string | null | undefined} href
+ * @returns {string}
+ */
+export function canonicalizeStorefrontHref(href) {
+  if (href == null || href === "") return href ?? "";
+  const raw = String(href);
+  if (raw === "/shop" || raw.startsWith("/shop?")) {
+    return `/products${raw.slice("/shop".length)}`;
+  }
+  if (raw.startsWith("/shop/")) {
+    return `/products${raw.slice("/shop".length)}`;
+  }
+  return raw;
+}

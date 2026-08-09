@@ -21,7 +21,7 @@ export default function AuthRouteShell({ children }) {
 
   if (!ready) {
     return (
-      <main className="flex flex-1 flex-col">
+      <main className="flex flex-1 flex-col font-sf-pro">
         <LoadingCenter className="min-h-[50vh]" />
       </main>
     );
@@ -31,5 +31,5 @@ export default function AuthRouteShell({ children }) {
     return null;
   }
 
-  return <main className="flex flex-1 flex-col">{children}</main>;
+  return <main className="flex flex-1 flex-col font-sf-pro">{children}</main>;
 }

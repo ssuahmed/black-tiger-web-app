@@ -4,11 +4,17 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import AuthCard from "@/components/auth/AuthCard";
+import AuthIdentifierField, {
+  resolveAuthIdentifier,
+} from "@/components/auth/AuthIdentifierField";
+import AuthOtpForm from "@/components/auth/AuthOtpForm";
 import PasswordRequirements from "@/components/auth/PasswordRequirements";
-import { Alert, Button, Checkbox, FormField, Input, OtpInput, PasswordInput, SegmentedControl, Spinner } from "@/components/ui";
+import { Alert, Button, Checkbox, FormField, Input, PasswordInput, SegmentedControl, Spinner } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePasswordPolicy } from "@/hooks/usePasswordPolicy";
 import { safeReturnPath } from "@/lib/auth/authRedirect.mjs";
+import { DEFAULT_DIAL_CODE, isPhoneIdentifierMode } from "@/lib/auth/phoneIdentifier";
+import { looksLikePhoneSignupAttempt, validateLoginIdentifier, validateSignupEmail } from "@/lib/auth/email";
 import { clearOtpSession, stashOtpSession } from "@/lib/authSession";
 import { formatApiError } from "@/lib/formatApiError";
 import { passwordMeetsPolicy } from "@/lib/passwordRules";
@@ -25,6 +31,7 @@ export default function SignInClient({ initialIntent = "login" }) {
   /** @type {'identifier' | 'login_method' | 'password' | 'otp' | 'register_form'} */
   const [step, setStep] = useState("identifier");
   const [identifier, setIdentifier] = useState("");
+  const [dialCode, setDialCode] = useState(DEFAULT_DIAL_CODE);
   const [challengeId, setChallengeId] = useState("");
   const [maskedDestination, setMaskedDestination] = useState("");
   /** @type {'otp' | 'password' | null} */
@@ -36,6 +43,10 @@ export default function SignInClient({ initialIntent = "login" }) {
   const [busy, setBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
   const [error, setError] = useState("");
+  const [fieldError, setFieldError] = useState("");
+  const [otpResendKey, setOtpResendKey] = useState(0);
+  /** @type {'whatsapp' | 'sms'} */
+  const [otpVia, setOtpVia] = useState("whatsapp");
 
   const registerReady = useMemo(() => {
     return (
@@ -45,6 +56,30 @@ export default function SignInClient({ initialIntent = "login" }) {
       acceptTerms
     );
   }, [password, confirmPassword, acceptTerms, policy.rules]);
+
+  const identifierReady = useMemo(() => {
+    if (intent === "register") {
+      return Boolean(identifier.trim()) && !validateSignupEmail(identifier);
+    }
+    return Boolean(identifier.trim()) && !validateLoginIdentifier(identifier, dialCode);
+  }, [intent, identifier, dialCode]);
+
+  function onRegisterIdentifierChange(next) {
+    setIdentifier(next);
+    setError("");
+    if (looksLikePhoneSignupAttempt(next)) {
+      setFieldError("You can only sign up with an email address.");
+    } else {
+      setFieldError("");
+    }
+  }
+
+  function onLoginIdentifierChange({ value, dialCode: nextDial }) {
+    setIdentifier(value);
+    setDialCode(nextDial);
+    setError("");
+    setFieldError("");
+  }
 
   function afterAuth() {
     clearOtpSession();
@@ -61,19 +96,41 @@ export default function SignInClient({ initialIntent = "login" }) {
 
   async function goSendOtp(purpose) {
     if (!challengeId) throw new Error("Missing challenge");
-    await sendOtp({ challengeId, purpose });
-    stashOtpSession(challengeId, purpose, identifier);
+    const phone = isPhoneIdentifierMode(identifier);
+    const channel = phone ? "whatsapp" : "email";
+    await sendOtp({ challengeId, purpose, channel });
+    stashOtpSession(challengeId, purpose, resolvedIdentifier() || identifier);
     setOtpCode("");
+    if (phone) setOtpVia("whatsapp");
+    setOtpResendKey((k) => k + 1);
     setStep("otp");
+  }
+
+  function resolvedIdentifier() {
+    if (intent === "register") return identifier.trim();
+    return resolveAuthIdentifier(identifier, dialCode);
   }
 
   async function onContinueIdentifier(e) {
     e.preventDefault();
     setError("");
-    const trimmed = identifier.trim();
-    if (!trimmed) {
-      setError("Enter your email or mobile number.");
-      return;
+    const trimmed = resolvedIdentifier();
+    if (intent === "register") {
+      const signupError = trimmed
+        ? validateSignupEmail(trimmed)
+        : "Enter your email address.";
+      if (signupError) {
+        setFieldError(signupError);
+        return;
+      }
+      setFieldError("");
+    } else {
+      const loginError = validateLoginIdentifier(identifier, dialCode);
+      if (loginError) {
+        setFieldError(loginError);
+        return;
+      }
+      setFieldError("");
     }
     setBusy(true);
     try {
@@ -86,29 +143,29 @@ export default function SignInClient({ initialIntent = "login" }) {
       if (data.maskedDestination) setMaskedDestination(String(data.maskedDestination));
 
       const next = data.nextStep;
-      if (intent === "login") {
-        if (next === "login_method") {
-          setLoginMethod(null);
-          setStep("login_method");
-          return;
+      // Drive the wizard from API nextStep (not client intent alone).
+      // Register + existing account → API returns login_method.
+      if (next === "login_method") {
+        if (intent === "register") {
+          setIntent("login");
+          setError("An account already exists for this email. Sign in to continue.");
         }
-        if (next === "otp") {
-          await goSendOtp("login");
-          return;
-        }
-        if (next === "password") {
-          setStep("password");
-          return;
-        }
-      } else {
-        if (next === "register_form") {
-          setStep("register_form");
-          return;
-        }
-        if (next === "otp") {
-          await goSendOtp("register");
-          return;
-        }
+        setLoginMethod(null);
+        setStep("login_method");
+        return;
+      }
+      if (next === "register_form") {
+        setStep("register_form");
+        return;
+      }
+      if (next === "otp") {
+        await goSendOtp(intent === "register" ? "register" : "login");
+        return;
+      }
+      if (next === "password") {
+        setIntent("login");
+        setStep("password");
+        return;
       }
       setError("This account flow is not supported yet. Try another method.");
     } catch (err) {
@@ -141,7 +198,7 @@ export default function SignInClient({ initialIntent = "login" }) {
     setBusy(true);
     try {
       await loginWithPassword({
-        identifier: identifier.trim(),
+        identifier: resolvedIdentifier(),
         password,
         challengeId,
       });
@@ -208,12 +265,20 @@ export default function SignInClient({ initialIntent = "login" }) {
     }
   }
 
-  async function onResendOtp() {
+  async function onResendOtp(via) {
     if (!challengeId) return;
     setError("");
     setResendBusy(true);
     try {
-      await resendOtp({ challengeId });
+      const channel =
+        via === "sms" || via === "whatsapp" || via === "email"
+          ? via
+          : isPhoneIdentifierMode(identifier)
+            ? otpVia
+            : "email";
+      await resendOtp({ challengeId, channel });
+      if (channel === "sms" || channel === "whatsapp") setOtpVia(channel);
+      setOtpResendKey((k) => k + 1);
     } catch (err) {
       setError(flowError(err));
     } finally {
@@ -230,27 +295,26 @@ export default function SignInClient({ initialIntent = "login" }) {
     setOtpCode("");
     setMaskedDestination("");
     setError("");
+    setFieldError("");
+    setOtpVia("whatsapp");
     clearOtpSession();
   }
 
+  const otpChannel = isPhoneIdentifierMode(identifier) ? "phone" : "email";
+  const otpDestination =
+    otpChannel === "phone"
+      ? `${dialCode}${String(identifier || "").replace(/\D/g, "")}`
+      : maskedDestination || identifier;
+
   const title =
-    intent === "login"
-      ? step === "otp"
-        ? "Verify sign-in"
-        : "Sign In"
-      : step === "otp"
-        ? "Verify your email"
+    step === "otp"
+      ? "Enter the 6-digit OTP sent to"
+      : intent === "login"
+        ? "Sign In"
         : "Sign Up";
 
-  const subtitle =
-    step === "otp"
-      ? maskedDestination
-        ? `Code sent to ${maskedDestination}`
-        : "Enter the code we sent to your email or phone."
-      : null;
-
   return (
-    <AuthCard title={title} subtitle={subtitle}>
+    <AuthCard title={title} className={step === "otp" ? "auth-shell--otp" : undefined}>
       <div className="form-stack">
         {step === "identifier" ? (
           <>
@@ -261,32 +325,61 @@ export default function SignInClient({ initialIntent = "login" }) {
               ]}
               value={intent}
               onChange={(v) => {
-                setIntent(v === "register" ? "register" : "login");
+                const next = v === "register" ? "register" : "login";
+                setIntent(next);
                 setError("");
+                setFieldError("");
+                // Signup is email-only — drop any phone number typed on Log in.
+                if (next === "register" && isPhoneIdentifierMode(identifier)) {
+                  setIdentifier("");
+                  setDialCode(DEFAULT_DIAL_CODE);
+                }
               }}
             />
             <form onSubmit={onContinueIdentifier} className="form-stack">
-              <FormField
-                id="identifier"
-                label={intent === "register" ? "Email address" : "Email or mobile"}
-                required
-                variant="outlined"
-              >
-                <Input
+              {intent === "register" ? (
+                <FormField
                   id="identifier"
-                  autoComplete="username"
+                  label="Email address"
+                  required
+                  variant="outlined"
+                  error={fieldError || undefined}
+                >
+                  <Input
+                    id="identifier"
+                    type="email"
+                    autoComplete="email"
+                    value={identifier}
+                    onChange={(e) => onRegisterIdentifierChange(e.target.value)}
+                    onBlur={() => {
+                      if (identifier.trim()) setFieldError(validateSignupEmail(identifier));
+                    }}
+                    placeholder="Email address"
+                    disabled={busy}
+                  />
+                </FormField>
+              ) : (
+                <AuthIdentifierField
+                  id="identifier"
                   value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={intent === "register" ? "Email address" : "you@company.com"}
+                  dialCode={dialCode}
+                  onChange={onLoginIdentifierChange}
+                  onBlur={() => {
+                    if (identifier.trim()) {
+                      setFieldError(validateLoginIdentifier(identifier, dialCode));
+                    }
+                  }}
+                  error={fieldError || undefined}
+                  required
                   disabled={busy}
                 />
-              </FormField>
+              )}
               {error ? (
                 <Alert variant="error" className="form-global-error">
                   {error}
                 </Alert>
               ) : null}
-              <Button type="submit" className="btn-auth" disabled={busy || !identifier.trim()}>
+              <Button type="submit" className="btn-auth" disabled={busy || !identifierReady}>
                 {busy ? <Spinner size="sm" /> : "Continue"}
               </Button>
             </form>
@@ -296,11 +389,12 @@ export default function SignInClient({ initialIntent = "login" }) {
         {step === "login_method" && intent === "login" ? (
           <div className="form-stack">
             <p className="auth-meta">
-              Signed in as <strong>{maskedDestination || identifier}</strong>{" "}
+              Signing in as <strong>{maskedDestination || identifier}</strong>{" "}
               <button type="button" onClick={restartIdentifier}>
                 Change
               </button>
             </p>
+            <p className="auth-meta auth-meta--prompt">Choose how you would like to sign in</p>
             <Button type="button" className="btn-auth" disabled={busy} onClick={() => void onPickLoginMethod("otp")}>
               {busy && loginMethod === "otp" ? <Spinner size="sm" /> : "One-time code (OTP)"}
             </Button>
@@ -421,34 +515,21 @@ export default function SignInClient({ initialIntent = "login" }) {
         ) : null}
 
         {step === "otp" ? (
-          <form onSubmit={onVerifyOtp} className="form-stack">
-            <p className="auth-meta">
-              Not you?{" "}
-              <button type="button" onClick={restartIdentifier}>
-                Start over
-              </button>
-            </p>
-            <FormField id="otp" label="One-time code">
-              <OtpInput value={otpCode} onChange={setOtpCode} disabled={busy} />
-            </FormField>
-            {error ? (
-              <Alert variant="error" className="form-global-error">
-                {error}
-              </Alert>
-            ) : null}
-            <Button type="submit" className="btn-auth" disabled={busy || otpCode.replace(/\D/g, "").length !== 6}>
-              {busy ? <Spinner size="sm" /> : "Verify & continue"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              disabled={busy || resendBusy || !challengeId}
-              onClick={() => void onResendOtp()}
-            >
-              {resendBusy ? <Spinner size="sm" /> : "Resend code"}
-            </Button>
-          </form>
+          <AuthOtpForm
+            destination={otpDestination}
+            channel={otpChannel}
+            activeVia={otpVia}
+            value={otpCode}
+            onChange={setOtpCode}
+            onSubmit={onVerifyOtp}
+            onChangeDestination={restartIdentifier}
+            onResend={onResendOtp}
+            onViaChange={setOtpVia}
+            busy={busy}
+            resendBusy={resendBusy}
+            error={error}
+            resendKey={otpResendKey}
+          />
         ) : null}
       </div>
     </AuthCard>

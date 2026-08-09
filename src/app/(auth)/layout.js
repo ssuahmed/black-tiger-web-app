@@ -6,7 +6,7 @@ import { LoadingCenter } from "@/components/ui";
 /** @param {{ children: import('react').ReactNode }} props */
 export default function AuthGroupLayout({ children }) {
   return (
-    <Suspense fallback={<LoadingCenter className="min-h-[50vh]" />}>
+    <Suspense fallback={<LoadingCenter className="min-h-[50vh] font-sf-pro" />}>
       <AuthRouteShell>{children}</AuthRouteShell>
     </Suspense>
   );

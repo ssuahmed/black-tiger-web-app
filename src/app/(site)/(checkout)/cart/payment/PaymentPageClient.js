@@ -1,24 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import CartOrderSummary from "@/components/cart/CartOrderSummary";
 import CheckoutLayout from "@/components/cart/CheckoutLayout";
 import CheckoutStepTitle from "@/components/cart/CheckoutStepTitle";
 import PaymentForm from "@/components/cart/PaymentForm";
-import { Alert, LoadingCenter } from "@/components/ui";
+import { BagIcon } from "@/components/checkout/icons/CheckoutIcons";
+import { Alert, LoadingCenter, Money } from "@/components/ui";
 import { useCart } from "@/contexts/CartContext";
 import { useCheckoutAuth } from "@/hooks/useCheckoutAuth";
 import { useCheckoutStepGuard } from "@/hooks/useCheckoutStepGuard";
 import { useCommerceCart } from "@/hooks/useCommerceCart";
 import { CommerceApiError } from "@/lib/api/client";
 import * as checkoutApi from "@/lib/api/checkout";
-import { createQuote } from "@/lib/api/quotes";
+import { createQuoteAndDownloadPdf } from "@/lib/api/quotes";
 import { normalizeCheckoutTotals } from "@/lib/checkout/mapCheckout.mjs";
 import { formatApiError } from "@/lib/formatApiError";
 import { routes } from "@/lib/routes";
 
 export default function PaymentPageClient() {
+  const router = useRouter();
   const { cart, cartId: sessionCartId, clearCart, refreshCart } = useCart();
   const activeCartId = cart?.id ?? sessionCartId;
   const { lines, totals, logistics, promo, ready, isEmpty } = useCommerceCart();
@@ -60,7 +63,12 @@ export default function PaymentPageClient() {
 
   if (done) {
     return (
-      <CheckoutLayout formLayout sidebar={<CartOrderSummary variant="payment" lines={lines} totals={paymentTotals} />}>
+      <CheckoutLayout
+        formLayout
+        preset="checkoutForm"
+        className="co-payment-page font-sf-pro"
+        sidebar={<CartOrderSummary variant="payment" lines={lines} totals={paymentTotals} />}
+      >
         <Alert variant="success" role="status">
           Order placed. Your order number is {String(done.orderNumber ?? "")}.
         </Alert>
@@ -87,11 +95,12 @@ export default function PaymentPageClient() {
     setError("");
     try {
       const intent = await checkoutApi.createPaymentIntent(activeCartId, { method });
-      if (method === "card" && intent?.redirectUrl) {
+      const hosted = method === "card" || method === "apple_pay";
+      if (hosted && intent?.redirectUrl) {
         window.location.assign(intent.redirectUrl);
         return;
       }
-      if (method === "card" && intent?.paymentIntentId) {
+      if (hosted && intent?.paymentIntentId) {
         await checkoutApi.confirmPaymentIntent(activeCartId, {
           paymentIntentId: intent.paymentIntentId,
         });
@@ -100,8 +109,16 @@ export default function PaymentPageClient() {
         confirm: true,
         paymentMethod: method,
       });
-      setDone(result);
       await clearCart();
+      if (method === "wire") {
+        const orderId = encodeURIComponent(String(result?.orderId ?? ""));
+        const orderNumber = encodeURIComponent(String(result?.orderNumber ?? ""));
+        router.push(
+          `${routes.accountWireTransfer}?orderId=${orderId}&orderNumber=${orderNumber}`,
+        );
+        return;
+      }
+      setDone(result);
     } catch (err) {
       const msg = err instanceof CommerceApiError ? err.message : "Checkout failed.";
       setError(msg);
@@ -119,16 +136,18 @@ export default function PaymentPageClient() {
     setError("");
     setQuoteMessage("");
     try {
-      const result = await createQuote({
+      const result = await createQuoteAndDownloadPdf({
         cartId: activeCartId,
-        purchaseOrderNumber: summary?.purchaseOrderNumber ? String(summary.purchaseOrderNumber) : undefined,
+        purchaseOrderNumber: summary?.purchaseOrderNumber
+          ? String(summary.purchaseOrderNumber)
+          : undefined,
         notes: summary?.orderNotes ? String(summary.orderNotes) : undefined,
       });
       setQuoteMessage(
-        `Quote ${String(result.quoteId ?? "")} created. ${String(result.message ?? "Our team will follow up.")}`,
+        `Quote ${String(result?.quoteId ?? "")} downloaded as PDF.`,
       );
     } catch (err) {
-      setError(formatApiError(err, "Could not create quote."));
+      setError(formatApiError(err, "Could not create quote PDF."));
     } finally {
       setQuoteBusy(false);
     }
@@ -137,6 +156,8 @@ export default function PaymentPageClient() {
   return (
     <CheckoutLayout
       formLayout
+      preset="checkoutForm"
+      className="co-payment-page font-sf-pro"
       sidebar={
         <CartOrderSummary
           variant="payment"
@@ -152,16 +173,21 @@ export default function PaymentPageClient() {
       <CheckoutStepTitle
         step="4"
         title="Payment"
-        continueHref="/cart/shipping"
+        showContinue={false}
         trailing={
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded border border-neutral-900 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 disabled:opacity-60"
-            onClick={handleCreateQuote}
-            disabled={quoteBusy || busy}
-          >
-            Create Quote
-          </button>
+          <div className="co-payment-head__actions">
+            <button
+              type="button"
+              className="co-payment-quote"
+              onClick={handleCreateQuote}
+              disabled={quoteBusy || busy}
+            >
+              {quoteBusy ? "Preparing PDF…" : "Create Quote"}
+            </button>
+            <Link href={routes.cart} className="co-payment-bag" aria-label="Cart">
+              <BagIcon className="size-5" />
+            </Link>
+          </div>
         }
       />
       {error ? (
@@ -175,9 +201,13 @@ export default function PaymentPageClient() {
         </Alert>
       ) : null}
       {summary?.selectedShipping ? (
-        <Alert variant="info" className="mb-4">
+        <Alert variant="info" className="mb-4 hidden" hidden>
           Shipping: {String(summary.selectedShipping.label ?? "Selected")} ·{" "}
-          {String(summary.selectedShipping.price?.formatted ?? checkoutTotals.formattedShipping)}
+          <Money
+            value={String(
+              summary.selectedShipping.price?.formatted ?? checkoutTotals.formattedShipping,
+            )}
+          />
         </Alert>
       ) : null}
       <PaymentForm onPay={handlePay} busy={busy} />

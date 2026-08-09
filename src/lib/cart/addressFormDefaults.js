@@ -8,8 +8,8 @@ export const EMPTY_ADDRESS_FORM = {
     addressKind: "home",
   },
   recipients: [
-    { id: "primary", name: "", phone: "", selected: true },
-    { id: "other", name: "Someone else will be at the door", phone: "", selected: false },
+    { id: "primary", name: "", phone: "", email: "", selected: true },
+    { id: "other", name: "Someone else will be at the door", phone: "", email: "", selected: false },
   ],
   accountType: "personal",
   billingSameAsShipping: true,
@@ -45,6 +45,7 @@ export const EMPTY_ADDRESS_FORM = {
   companyFloor: "",
   phoneCountry: "+966",
   phone: "",
+  recipientName: "",
   email: "",
   portOfDestination: "",
   freightType: "",

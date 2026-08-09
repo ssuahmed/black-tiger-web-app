@@ -31,7 +31,7 @@ export default function CartPageClient() {
           title="Your cart is empty"
           description="Browse products and add items to your cart."
           action={
-            <Link href="/shop" className="btn btn-primary inline-flex">
+            <Link href="/products" className="btn btn-primary inline-flex">
               Continue shopping
             </Link>
           }

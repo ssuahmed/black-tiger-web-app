@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
  *   sidebar: React.ReactNode;
  *   top?: React.ReactNode;
  *   formLayout?: boolean;
- *   preset?: "checkout" | "checkoutForm" | "cart";
+ *   preset?: "checkout" | "checkoutForm" | "checkoutShipping" | "cart";
  *   className?: string;
  * }} props
  */

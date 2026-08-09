@@ -2,6 +2,8 @@
  * PDP / PLP pricing helpers — packaging variants and live price quotes.
  */
 
+import { formatSarAmount } from "../format/money.js";
+
 /** @param {unknown} pricing */
 export function inferPalletType(pricing, quantity) {
   const row = pricing && typeof pricing === "object" ? /** @type {Record<string, unknown>} */ (pricing) : {};
@@ -36,7 +38,7 @@ export function packagingUnitPriceLabel(options, id) {
   const opt = options.find((o) => o.id === id);
   if (opt?.formattedUnitPrice) return String(opt.formattedUnitPrice);
   if (typeof opt?.unitPrice === "number") {
-    return `${opt.unitPrice.toLocaleString("en-SA")} SAR`;
+    return `${formatSarAmount(opt.unitPrice)} SAR`;
   }
   return "";
 }
@@ -77,10 +79,10 @@ export function mergeQuotePricing(quote, fallback) {
   const currency = String(ls?.currency ?? p.currency ?? fb.currency ?? "SAR");
   const formattedUnitPrice =
     (typeof p.formattedUnitPrice === "string" && p.formattedUnitPrice) ||
-    (unitPrice != null ? `${Number(unitPrice).toLocaleString("en-SA")} ${currency}` : fb.formattedUnitPrice);
+    (unitPrice != null ? `${formatSarAmount(Number(unitPrice))} ${currency}` : fb.formattedUnitPrice);
   const formattedTotal =
     (typeof p.formattedTotal === "string" && p.formattedTotal) ||
-    (ls?.totalPrice != null ? `${Number(ls.totalPrice).toLocaleString("en-SA")} ${currency}` : formattedUnitPrice);
+    (ls?.totalPrice != null ? `${formatSarAmount(Number(ls.totalPrice))} ${currency}` : formattedUnitPrice);
 
   const lineSummaryRows = ls
     ? [

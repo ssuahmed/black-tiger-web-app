@@ -4,7 +4,7 @@
  */
 export function cmsImageProps(src) {
   if (!src) return { unoptimized: true };
-  if (src.startsWith("/web/image/") || src.includes("/web/image/bt.website.block/")) {
+  if (src.startsWith("/web/image/") || src.includes("/web/image/")) {
     return { unoptimized: true };
   }
   try {

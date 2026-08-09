@@ -125,11 +125,17 @@ async function testReady() {
 }
 
 async function testShopPageHtml() {
-  const res = await fetch(`${WEB_BASE}/shop`);
-  const html = await res.text();
-  assert.ok(res.ok, `shop page HTTP ${res.status}`);
-  assert.ok(html.includes("Categories") || html.includes("categories"), "category nav markup");
-  record("GET /shop HTML", true, `HTTP ${res.status}, length=${html.length}`);
+  const res = await fetch(`${WEB_BASE}/shop`, { redirect: "manual" });
+  assert.ok([301, 302, 303, 307, 308].includes(res.status), `shop redirect HTTP ${res.status}`);
+  const loc = res.headers.get("location") || "";
+  assert.ok(loc.includes("/products"), `redirect Location should be /products, got ${loc}`);
+  record("GET /shop → /products", true, `HTTP ${res.status} → ${loc}`);
+
+  const products = await fetch(`${WEB_BASE}/products`);
+  const html = await products.text();
+  assert.ok(products.ok, `products page HTTP ${products.status}`);
+  assert.ok(html.includes("product") || html.includes("Product"), "products markup");
+  record("GET /products HTML", true, `HTTP ${products.status}, length=${html.length}`);
 }
 
 async function main() {

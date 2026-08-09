@@ -26,6 +26,7 @@ const SiteSection = forwardRef(function SiteSection(
     innerProps,
     preserveAspectOnMobile = true,
     style,
+    aspectRatio,
     ...rest
   },
   ref,
@@ -55,6 +56,7 @@ const SiteSection = forwardRef(function SiteSection(
       "--ss-w": width,
         ...(!implicitAutoHeight && { "--ss-h": height }),
         ...(bg && { backgroundImage: bg }),
+        ...(aspectRatio && { aspectRatio: aspectRatio }),
         backgroundPosition,
         backgroundSize,
         backgroundRepeat: "no-repeat",

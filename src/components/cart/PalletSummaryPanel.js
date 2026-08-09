@@ -11,13 +11,13 @@ export default function PalletSummaryPanel({ logistics }) {
   ];
 
   return (
-    <div className="mb-4 overflow-x-auto">
-      <table className="co-table">
+    <div className="co-pallet-wrap">
+      <table className="co-table co-table--pallet">
         <thead>
           <tr>
-            <th>Pallet Type</th>
-            <th>Pallets Qty</th>
-            <th>AI Partial Pallet Optimizer</th>
+            <th scope="col">Pallet Type</th>
+            <th scope="col">Pallets Qty</th>
+            <th scope="col">AI Partial Pallet Optimizer</th>
           </tr>
         </thead>
         <tbody>
@@ -25,7 +25,7 @@ export default function PalletSummaryPanel({ logistics }) {
             <tr key={label}>
               <td>{label}</td>
               <td>{value}</td>
-              <td className="text-neutral-500">—</td>
+              <td>{value}</td>
             </tr>
           ))}
         </tbody>

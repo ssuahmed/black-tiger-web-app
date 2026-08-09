@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { applyCartPromo, removeCartPromo } from "@/lib/api/cart";
+import { Money } from "@/components/ui";
 import { formatApiError } from "@/lib/formatApiError";
 
 /** @param {{ cartId?: string | null; promo?: { code: string; formattedDiscount?: string } | null; onChanged?: () => void | Promise<void> }} props */
@@ -44,9 +45,15 @@ export default function PromoCodeField({ cartId, promo, onChanged }) {
     <div className="co-promo my-4 pt-1">
       {promo ? (
         <div className="co-promo__applied flex items-center justify-between gap-3 text-sm">
-          <span>
+          <span className="inline-flex flex-wrap items-center gap-1">
             Code <strong>{promo.code}</strong>
-            {promo.formattedDiscount ? ` (−${promo.formattedDiscount})` : ""}
+            {promo.formattedDiscount ? (
+              <>
+                {" "}
+                (−
+                <Money value={promo.formattedDiscount} />)
+              </>
+            ) : null}
           </span>
           <button
             type="button"
@@ -58,10 +65,10 @@ export default function PromoCodeField({ cartId, promo, onChanged }) {
           </button>
         </div>
       ) : (
-        <form className="co-promo__form grid grid-cols-[minmax(0,1fr)_auto] gap-2.5" onSubmit={apply}>
+        <form className="co-promo__form" onSubmit={apply}>
           <input
             type="text"
-            className="co-promo__input box-border min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3.5 py-2 text-sm text-neutral-900"
+            className="co-promo__input"
             placeholder="Discount code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
@@ -70,7 +77,7 @@ export default function PromoCodeField({ cartId, promo, onChanged }) {
           />
           <button
             type="submit"
-            className="co-promo__apply min-h-11 min-w-[5.25rem] cursor-pointer rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-500 disabled:cursor-not-allowed disabled:opacity-55"
+            className="co-promo__apply"
             disabled={busy || !code.trim() || !cartId}
           >
             Apply

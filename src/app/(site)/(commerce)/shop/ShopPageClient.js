@@ -35,7 +35,7 @@ function shopBreadcrumbs(selectedCategory, categories) {
   const cat = categories.find((c) => c.slug === selectedCategory);
   return [
     { label: "HOME", href: "/" },
-    { label: "SHOP", href: "/shop" },
+    { label: "SHOP", href: "/products" },
     { label: cat?.name ?? selectedCategory.toUpperCase() },
   ];
 }
@@ -211,7 +211,7 @@ function ShopPageInner({
     setFilters({});
     setSelectedCategory(null);
     if (searchQuery && typeof window !== "undefined") {
-      window.location.assign("/shop");
+      window.location.assign("/products");
     }
   }, [searchQuery]);
 
@@ -306,7 +306,7 @@ function ShopPageInner({
       {searchQuery ? (
         <p className="mb-4 text-sm text-neutral-600">
           Results for “{searchQuery}” ·{" "}
-          <a href="/shop" className="text-primary hover:underline">
+          <a href="/products" className="text-primary hover:underline">
             Clear search
           </a>
         </p>

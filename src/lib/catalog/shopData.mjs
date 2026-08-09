@@ -1,6 +1,8 @@
 /**
- * Normalize Commerce API catalog payloads for the /shop page.
+ * Normalize Commerce API catalog payloads for the products catalog.
  */
+
+import { canonicalizeStorefrontHref } from "../routes.js";
 
 /** @param {unknown} payload */
 export function normalizeCategoryTree(payload) {
@@ -51,7 +53,7 @@ export function normalizeBreadcrumbs(breadcrumbs) {
   if (!Array.isArray(breadcrumbs) || !breadcrumbs.length) return [];
   return breadcrumbs.map((b) => ({
     label: String(b?.label ?? ""),
-    href: b?.href ? String(b.href) : undefined,
+    href: b?.href ? canonicalizeStorefrontHref(String(b.href)) : undefined,
   }));
 }
 
@@ -69,7 +71,9 @@ export function plpHeroFromCategory(category) {
     body: banner.body ? String(banner.body) : undefined,
     bodyHtml: banner.bodyHtml ? String(banner.bodyHtml) : undefined,
     ctaLabel: banner.ctaLabel ? String(banner.ctaLabel) : "SHOP ALL",
-    ctaHref: banner.ctaHref ? String(banner.ctaHref) : "/shop",
+    ctaHref: canonicalizeStorefrontHref(
+      banner.ctaHref ? String(banner.ctaHref) : "/products",
+    ),
     backgroundImage:
       (banner.backgroundImage ? String(banner.backgroundImage) : null) ??
       (banner.imageUrl ? String(banner.imageUrl) : undefined),

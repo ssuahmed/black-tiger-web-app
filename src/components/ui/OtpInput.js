@@ -2,11 +2,12 @@
 
 import { useCallback, useRef } from "react";
 
-/** @param {{ value: string; onChange: (code: string) => void; length?: number; disabled?: boolean }} props */
+/** @param {{ value: string; onChange: (code: string) => void; length?: number; disabled?: boolean; className?: string }} props */
 export default function OtpInput({ value = "", onChange, length = 6, disabled, className = "" }) {
   const refs = useRef([]);
+  const raw = String(value || "").replace(/\D/g, "").slice(0, length);
   /** @type {string[]} */
-  const digits = [...String(value || "").padEnd(length, "").slice(0, length)];
+  const digits = Array.from({ length }, (_, i) => raw[i] || "");
 
   const focusAt = useCallback((i) => {
     const el = refs.current[i];
@@ -34,7 +35,7 @@ export default function OtpInput({ value = "", onChange, length = 6, disabled, c
           autoComplete={i === 0 ? "one-time-code" : "off"}
           maxLength={1}
           disabled={disabled}
-          value={d.trim() === "" ? "" : d}
+          value={d}
           aria-label={`Digit ${i + 1}`}
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "").slice(-1);

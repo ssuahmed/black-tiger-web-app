@@ -76,6 +76,11 @@ export function listPaymentMethods() {
   return commerceFetch("account/payment-methods", { method: "GET" });
 }
 
+/** @param {{ page?: number, pageSize?: number }} [params] */
+export function listAccountPayments(params) {
+  return commerceFetch(`account/payments${buildQueryString(params || {})}`, { method: "GET" });
+}
+
 export function getNotificationPreferences() {
   return commerceFetch("account/notifications", { method: "GET" });
 }
@@ -116,6 +121,42 @@ export function uploadCreditApplicationDocument({ applicationId, documentType, f
   fd.set("documentType", documentType);
   fd.set("file", file);
   return commerceFetch(`account/business/credit-application/${encodeURIComponent(applicationId)}/documents`, {
+    method: "POST",
+    body: fd,
+  });
+}
+
+/**
+ * Upload a KYC document for the storefront business company partner in Odoo.
+ * @param {{ documentType: string, file: File | Blob }} input
+ */
+export function uploadBusinessDocument({ documentType, file }) {
+  const fd = new FormData();
+  fd.set("documentType", documentType);
+  fd.set("file", file);
+  return commerceFetch("account/business/documents", {
+    method: "POST",
+    body: fd,
+  });
+}
+
+/**
+ * Upload a bank-transfer receipt for an order.
+ * @param {{
+ *   orderId: string;
+ *   orderNumber?: string;
+ *   amount?: string | number;
+ *   transferDate?: string;
+ *   file: File | Blob;
+ * }} input
+ */
+export function uploadWireReceipt({ orderId, orderNumber, amount, transferDate, file }) {
+  const fd = new FormData();
+  if (orderNumber) fd.set("orderNumber", String(orderNumber));
+  if (amount != null && amount !== "") fd.set("amount", String(amount));
+  if (transferDate) fd.set("transferDate", String(transferDate));
+  fd.set("file", file);
+  return commerceFetch(`account/orders/${encodeURIComponent(orderId)}/wire-receipt`, {
     method: "POST",
     body: fd,
   });

@@ -3,7 +3,7 @@ import Link from "next/link";
 import PromoCodeField from "@/components/cart/PromoCodeField";
 import PalletSummaryPanel from "@/components/cart/PalletSummaryPanel";
 import { LockIcon } from "@/components/checkout/icons/CheckoutIcons";
-import { formatSarSymbol } from "@/lib/format/money";
+import { Money } from "@/components/ui";
 
 /**
  * @param {{
@@ -21,8 +21,18 @@ import { formatSarSymbol } from "@/lib/format/money";
  *   orderNote?: string;
  *   onOrderNoteChange?: (v: string) => void;
  *   deliveryAddress?: string | null;
- *   shippingMethods?: Array<{ id: string; label: string; priceFormatted?: string; etaDays?: number | null }>;
+ *   shippingMethods?: Array<{
+ *     id: string;
+ *     label: string;
+ *     priceFormatted?: string;
+ *     priceAmount?: number;
+ *     etaDays?: number | null;
+ *     qty?: number;
+ *     palletsLoaded?: number;
+ *     lineTotal?: number;
+ *   }>;
  *   selectedShippingId?: string;
+ *   onShippingMethodChange?: (id: string) => void;
  *   efficiencyScore?: number | null;
  *   recommendationMessage?: string | null;
  * }} props
@@ -44,6 +54,7 @@ export default function CartOrderSummary({
   deliveryAddress,
   shippingMethods = [],
   selectedShippingId = "",
+  onShippingMethodChange,
   efficiencyScore = null,
   recommendationMessage = null,
 }) {
@@ -66,42 +77,59 @@ export default function CartOrderSummary({
     );
 
   const totalsBlock = (
-    <div className="my-4 text-sm">
+    <div className={variant === "payment" ? "co-payment-totals" : "my-4 text-sm"}>
       {Number(totals.discount) > 0 ? (
-        <div className="mb-1.5 flex justify-between">
+        <div className={variant === "payment" ? "co-payment-totals__row" : "mb-1.5 flex justify-between"}>
           <span>Discount</span>
-          <span>−{String(totals.formattedDiscount)}</span>
+          <span>
+            −<Money value={String(totals.formattedDiscount)} />
+          </span>
         </div>
       ) : null}
-      <div className="mb-1.5 flex justify-between">
+      <div className={variant === "payment" ? "co-payment-totals__row" : "mb-1.5 flex justify-between"}>
         <span>Shipping</span>
-        <span>{String(totals.formattedShipping)}</span>
+        <span>
+          <Money value={String(totals.formattedShipping)} />
+        </span>
       </div>
-      {Number(totals.vat) > 0 ? (
+      {variant !== "payment" && Number(totals.vat) > 0 ? (
         <div className="mb-1.5 flex justify-between text-neutral-600">
           <span>VAT (15%)</span>
-          <span>{String(totals.formattedVat)}</span>
+          <span>
+            <Money value={String(totals.formattedVat)} />
+          </span>
         </div>
       ) : null}
-      <p className="mt-2 mb-0 text-lg font-bold">
-        Total Incl VAT {String(totals.formattedGrandTotal || totals.formattedTotalInclVat)}
-      </p>
+      {variant === "payment" ? (
+        <div className="co-payment-totals__grand">
+          <span>Total Incl VAT</span>
+          <strong>
+            <Money value={String(totals.formattedGrandTotal || totals.formattedTotalInclVat)} />
+          </strong>
+        </div>
+      ) : (
+        <p className="mt-2 mb-0 text-lg font-bold">
+          Total Incl VAT{" "}
+          <Money value={String(totals.formattedGrandTotal || totals.formattedTotalInclVat)} />
+        </p>
+      )}
     </div>
   );
 
   if (variant === "compact" || variant === "payment") {
     return (
-      <aside className={variant === "compact" ? "co-panel co-panel--compact w-full bg-transparent p-0 border-0" : "co-panel"}>
-        <ul className="co-compact-lines m-0 list-none p-0">
+      <div
+        className={
+          variant === "compact"
+            ? "co-panel co-panel--compact"
+            : "co-panel co-panel--payment"
+        }
+      >
+        <ul className="co-compact-lines">
           {lines.map((line) => (
-            <li
-              key={String(line.id)}
-              className="co-compact-line grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3.5 border-b border-neutral-200 py-3.5 first:pt-0"
-            >
-              <div className="co-compact-line__thumb relative h-[4.25rem] w-14 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100">
-                <span className="co-compact-line__qty absolute -top-1.5 -right-1.5 z-[1] inline-flex h-[1.15rem] min-w-[1.35rem] items-center justify-center rounded px-1.5 text-[0.6875rem] font-bold leading-none text-white bg-neutral-900">
-                  {String(line.quantity)}
-                </span>
+            <li key={String(line.id)} className="co-compact-line">
+              <div className="co-compact-line__thumb">
+                <span className="co-compact-line__qty">{String(line.quantity)}</span>
                 <Image
                   src={String(line.image?.url || "/logo.png")}
                   alt=""
@@ -111,16 +139,12 @@ export default function CartOrderSummary({
                   unoptimized
                 />
               </div>
-              <div className="co-compact-line__copy min-w-0">
-                <p className="co-compact-line__name m-0 text-[0.8125rem] font-bold leading-snug text-neutral-900">
-                  {String(line.name)}
-                </p>
-                <p className="co-compact-line__pack mt-0.5 mb-0 text-xs text-neutral-400">
-                  {String(line.packagingLabel)}
-                </p>
+              <div className="co-compact-line__copy">
+                <p className="co-compact-line__name">{String(line.name)}</p>
+                <p className="co-compact-line__pack">{String(line.packagingLabel)}</p>
               </div>
-              <span className="co-compact-line__price whitespace-nowrap text-[0.8125rem] font-semibold text-neutral-900">
-                {formatSarSymbol(Number(line.lineTotal || 0))}
+              <span className="co-compact-line__price">
+                <Money amount={Number(line.lineTotal || 0)} />
               </span>
             </li>
           ))}
@@ -129,94 +153,187 @@ export default function CartOrderSummary({
           <PromoCodeField cartId={cartId} promo={promo} onChanged={onPromoChanged} />
         ) : null}
         {variant === "compact" ? (
-          <div className="co-compact-subtotal mt-1 flex items-baseline justify-between gap-4 text-[0.9375rem] font-bold text-neutral-900">
-            <span>Subtotal.{String(totals.itemCount)} items</span>
-            <strong className="whitespace-nowrap text-[1.0625rem] font-bold">
-              {String(totals.formattedSubtotal)}
+          <div className="co-compact-subtotal">
+            <span>
+              Subtotal . {String(totals.itemCount ?? lines.length)} items
+            </span>
+            <strong>
+              <Money value={String(totals.formattedSubtotal)} />
             </strong>
           </div>
         ) : (
           totalsBlock
         )}
+      </div>
+    );
+  }
+
+  if (variant === "shipping") {
+    const methodRows = shippingMethods.map((method) => {
+      const qty = Number(method.qty ?? 0);
+      const unitPrice = Number(method.priceAmount ?? 0);
+      const lineTotal = Number(method.lineTotal ?? unitPrice * qty);
+      const palletsLoaded = Number(method.palletsLoaded ?? 0);
+      return {
+        ...method,
+        selected: method.id === selectedShippingId,
+        qty,
+        unitPrice,
+        totalPriceAmount: lineTotal,
+        totalPallets: palletsLoaded,
+      };
+    });
+    const totalQty = methodRows.reduce((sum, row) => sum + row.qty, 0);
+    const totalPriceAmount = methodRows.reduce((sum, row) => sum + row.totalPriceAmount, 0);
+    const totalPallets = methodRows.reduce((sum, row) => sum + row.totalPallets, 0);
+    const score =
+      efficiencyScore != null && Number.isFinite(Number(efficiencyScore))
+        ? Math.max(0, Math.min(100, Math.round(Number(efficiencyScore))))
+        : null;
+
+    return (
+      <aside className="co-panel co-panel--shipping font-sf-pro">
+        <p className="co-ship-subtotal">
+          <span>Subtotal</span>
+          <strong>
+            <Money value={String(totals.formattedSubtotal)} />
+          </strong>
+        </p>
+
+        {deliveryAddress ? (
+          <div className="co-ship-address">
+            <p className="co-ship-address__label">Delivery address:</p>
+            <p className="co-ship-address__body">{deliveryAddress}</p>
+          </div>
+        ) : null}
+
+        {logistics ? <PalletSummaryPanel logistics={logistics} /> : null}
+
+        {methodRows.length ? (
+          <div className="co-ship-methods">
+            <table className="co-table co-table--ship-methods">
+              <thead>
+                <tr>
+                  <th scope="col">Shipping Method</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">Total Price</th>
+                  <th scope="col">Total Pallets</th>
+                </tr>
+              </thead>
+              <tbody>
+                {methodRows.map((method) => (
+                  <tr key={method.id} className={method.qty > 0 ? "is-selected" : undefined}>
+                    <td>{method.label}</td>
+                    <td>{method.qty || "—"}</td>
+                    <td>
+                      {method.priceFormatted ? <Money value={method.priceFormatted} /> : "—"}
+                    </td>
+                    <td>
+                      {method.totalPriceAmount > 0 ? (
+                        <Money amount={method.totalPriceAmount} />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>{method.totalPallets || "—"}</td>
+                  </tr>
+                ))}
+                <tr className="co-table__total">
+                  <td>Total</td>
+                  <td>{totalQty || "—"}</td>
+                  <td />
+                  <td>
+                    {totalPriceAmount > 0 ? (
+                      <Money amount={totalPriceAmount} />
+                    ) : totals.formattedShipping ? (
+                      <Money value={String(totals.formattedShipping)} />
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td>{totalPallets || "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {score != null ? (
+          <div className="co-ship-efficiency">
+            <p className="co-ship-efficiency__label">Shipping Efficiency Score {score}%</p>
+            <div
+              className="co-efficiency"
+              role="progressbar"
+              aria-valuenow={score}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Shipping efficiency score"
+            >
+              <div className="co-efficiency__bar" style={{ width: `${score}%` }} />
+            </div>
+          </div>
+        ) : null}
+
+        {recommendationMessage ? (
+          <div className="co-ship-reco">
+            <p className="co-ship-reco__title">AI Shipping Recommendation:</p>
+            <p className="co-ship-reco__body">{recommendationMessage}</p>
+          </div>
+        ) : null}
+
+        <div className="co-ship-totals">
+          {Number(totals.discount) > 0 ? (
+            <div className="co-ship-totals__row">
+              <span>Discount</span>
+              <span>
+                −<Money value={String(totals.formattedDiscount)} />
+              </span>
+            </div>
+          ) : null}
+          <div className="co-ship-totals__row">
+            <span>Shipping</span>
+            <span>
+              <Money value={String(totals.formattedShipping)} />
+            </span>
+          </div>
+          <div className="co-ship-totals__row co-ship-totals__row--grand">
+            <span>Total Incl VAT</span>
+            <strong>
+              <Money value={String(totals.formattedGrandTotal || totals.formattedTotalInclVat)} />
+            </strong>
+          </div>
+        </div>
+
+        <label className="co-ship-note-label" htmlFor="order-note">
+          Add a note to your order
+        </label>
+        <textarea
+          id="order-note"
+          className="co-field co-ship-note"
+          value={orderNote ?? ""}
+          onChange={(e) => onOrderNoteChange?.(e.target.value)}
+        />
+
+        <button type="button" className="co-cta co-ship-cta" onClick={onCtaClick} disabled={ctaDisabled}>
+          {ctaLabel}
+        </button>
       </aside>
     );
   }
 
   return (
-    <aside className={variant === "cart" ? "co-panel co-panel--cart" : "co-panel"}>
-      <p className="m-0 mb-1 text-xl leading-tight font-bold">
-        <span className={variant === "cart" ? "text-sm" : ""}>Subtotal</span>{" "}
-        {String(totals.formattedSubtotal)}
+    <aside className="co-panel co-panel--cart">
+      <p className="co-cart-subtotal">
+        <span className="co-cart-subtotal__label">Subtotal</span>
+        <span className="co-cart-subtotal__value">
+          <Money value={String(totals.formattedSubtotal)} />
+          <span className="co-cart-subtotal__sar">SAR</span>
+        </span>
       </p>
-      <p className="m-0 mb-5 text-xs text-neutral-500">Taxes and shipping calculated at checkout</p>
+      <p className="co-cart-subtotal__hint">Taxes and shipping calculated at checkout</p>
 
-      {variant === "cart" && logistics ? <PalletSummaryPanel logistics={logistics} /> : null}
-
-      {variant === "shipping" && deliveryAddress ? (
-        <div className="mb-4 border border-neutral-300 bg-white px-4 py-3 text-xs leading-normal text-neutral-600">
-          {deliveryAddress}
-        </div>
-      ) : null}
-
-      {variant === "shipping" && logistics ? <PalletSummaryPanel logistics={logistics} /> : null}
-
-      {variant === "shipping" && shippingMethods.length ? (
-        <div className="mb-4 overflow-x-auto">
-          <p className="m-0 mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">Shipping method</p>
-          <table className="co-table">
-            <thead>
-              <tr>
-                <th>Method</th>
-                <th>ETA</th>
-                <th>Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shippingMethods.map((method) => (
-                <tr key={method.id} className={method.id === selectedShippingId ? "font-semibold" : ""}>
-                  <td>{method.label}</td>
-                  <td>{method.etaDays != null ? `${method.etaDays} days` : "—"}</td>
-                  <td>{method.priceFormatted || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-
-      {variant === "shipping" && efficiencyScore != null ? (
-        <div className="mb-4">
-          <div className="mb-1 flex items-baseline justify-between text-sm">
-            <span className="font-semibold">Shipping efficiency</span>
-            <span className="font-mono font-bold">{efficiencyScore}%</span>
-          </div>
-          <div className="co-efficiency" role="progressbar" aria-valuenow={efficiencyScore} aria-valuemin={0} aria-valuemax={100}>
-            <div className="co-efficiency__bar" style={{ width: `${Math.max(0, Math.min(100, efficiencyScore))}%` }} />
-          </div>
-          {recommendationMessage ? (
-            <p className="mt-3 mb-0 bg-neutral-800 px-3 py-3 text-xs leading-relaxed text-white">
-              <strong>AI Shipping Recommendation: </strong>
-              {recommendationMessage}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {variant === "shipping" ? totalsBlock : null}
-
-      {variant === "shipping" ? (
-        <>
-          <label className="mb-1.5 block text-xs font-semibold" htmlFor="order-note">
-            Add a note to your order
-          </label>
-          <textarea
-            id="order-note"
-            className="co-field min-h-16 resize-y"
-            value={orderNote ?? ""}
-            onChange={(e) => onOrderNoteChange?.(e.target.value)}
-          />
-        </>
-      ) : null}
+      {logistics ? <PalletSummaryPanel logistics={logistics} /> : null}
 
       {ctaEl}
     </aside>

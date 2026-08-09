@@ -1,11 +1,38 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useId, useState } from "react";
 import CategoryApplicationIcon from "@/components/home/CategoryApplicationIcon";
 import ChevronIcon from "@/components/ui/ChevronIcon";
 import { HOME_APPLICATION_ACCORDIONS, applicationHref } from "@/data/homeApplicationCategories";
+import { cmsImageProps } from "@/lib/cmsImage";
 import { cn } from "@/lib/cn";
+
+/** @param {{ app: { slug: string; label: string; icon?: string; imageUrl?: string } }} props */
+function ApplicationTileIcon({ app }) {
+  const imageUrl = typeof app.imageUrl === "string" ? app.imageUrl.trim() : "";
+  if (imageUrl) {
+    return (
+      <span className="relative block h-10 w-10 shrink-0 overflow-hidden sm:h-[3.25rem] sm:w-[3.25rem]">
+        <Image
+          src={imageUrl}
+          alt=""
+          fill
+          sizes="52px"
+          className="object-contain"
+          {...cmsImageProps(imageUrl)}
+        />
+      </span>
+    );
+  }
+  return (
+    <CategoryApplicationIcon
+      name={app.icon || "gear"}
+      className="h-10 w-10 shrink-0 text-black sm:h-[3.25rem] sm:w-[3.25rem]"
+    />
+  );
+}
 
 /** @param {{ categories?: typeof HOME_APPLICATION_ACCORDIONS }} props */
 export default function ApplicationAccordion({ categories = HOME_APPLICATION_ACCORDIONS }) {
@@ -73,7 +100,7 @@ export default function ApplicationAccordion({ categories = HOME_APPLICATION_ACC
                         href={applicationHref(category, app)}
                         className="box-border flex h-[7.25rem] w-[7.25rem] flex-col items-center justify-center gap-2 border border-[#f5c2c7] bg-white px-1.5 py-2 text-inherit no-underline transition-[border-color,box-shadow] duration-150 hover:border-[#eeb8be] hover:shadow-[0_1px_4px_rgba(233,1,6,0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:h-[150px] sm:w-[150px] sm:gap-2.5 sm:px-2 sm:py-3"
                       >
-                        <CategoryApplicationIcon name={app.icon} className="h-10 w-10 shrink-0 text-black sm:h-[3.25rem] sm:w-[3.25rem]" />
+                        <ApplicationTileIcon app={app} />
                         <span className="block max-w-full px-0.5 text-center text-[0.65rem] font-medium uppercase leading-[1.25] tracking-[0.04em] text-[#808080] sm:text-xs">
                           {app.label}
                         </span>

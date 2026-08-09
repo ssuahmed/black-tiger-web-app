@@ -1,3 +1,5 @@
+import { canonicalizeStorefrontHref } from "@/lib/routes";
+
 /**
  * Resolve CMS blocks from Commerce API / Odoo `bt.website.page`.
  * @param {Record<string, { text?: string | null; html?: string | null; imageUrl?: string | null; link?: { label?: string | null; href?: string | null } | null }> | undefined} blocks
@@ -27,7 +29,7 @@ export function blockCta(blocks, key, fallback = { label: "", href: "#" }) {
   if (!b?.link) return fallback;
   return {
     label: b.link.label ?? fallback.label,
-    href: b.link.href ?? fallback.href,
+    href: canonicalizeStorefrontHref(b.link.href ?? fallback.href),
   };
 }
 

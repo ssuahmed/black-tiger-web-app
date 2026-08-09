@@ -13,8 +13,10 @@ import { useCartStepGuard } from "@/hooks/useCartStepGuard";
 import { useCheckoutAuth } from "@/hooks/useCheckoutAuth";
 import { useCommerceCart } from "@/hooks/useCommerceCart";
 import { CommerceApiError } from "@/lib/api/client";
+import { uploadBusinessDocument } from "@/lib/api/account";
 import * as checkoutApi from "@/lib/api/checkout";
 import { buildCheckoutAddressPayload } from "@/lib/cart/checkoutAddress";
+import { routes } from "@/lib/routes";
 
 export default function AddressPageClient() {
   const router = useRouter();
@@ -33,7 +35,7 @@ export default function AddressPageClient() {
   if (!ready || !authReady || !canRender) return <LoadingCenter />;
   if (!shouldRender) return null;
 
-  async function handleSubmit(form) {
+  async function handleSubmit(form, extras = {}) {
     if (!activeCartId) {
       setError("Cart not ready.");
       return;
@@ -41,8 +43,27 @@ export default function AddressPageClient() {
     setBusy(true);
     setError("");
     try {
-      await checkoutApi.setCheckoutAddress(activeCartId, buildCheckoutAddressPayload(form, user));
-      router.push("/cart/shipping");
+      await checkoutApi.setCheckoutAddress(
+        activeCartId,
+        buildCheckoutAddressPayload(form, user, {
+          businessProfileComplete: Boolean(extras.businessProfileComplete),
+          companyName: extras.companyName,
+        }),
+      );
+      if (form.accountType === "business" && !extras.businessProfileComplete) {
+        const documents = extras.documents && typeof extras.documents === "object" ? extras.documents : {};
+        const entries = Object.entries(documents).filter(([, file]) => file instanceof File);
+        for (const [documentType, file] of entries) {
+          try {
+            await uploadBusinessDocument({ documentType, file });
+          } catch {
+            // Company sync already succeeded; do not block verification on a single doc failure.
+          }
+        }
+        router.push(routes.accountBusinessThankYou);
+        return;
+      }
+      router.push(routes.cartShipping);
     } catch (err) {
       const msg =
         err instanceof CommerceApiError

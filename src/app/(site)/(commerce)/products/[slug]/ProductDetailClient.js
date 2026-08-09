@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import Breadcrumbs from "@/components/catalog/Breadcrumbs";
 import PageShell from "@/components/layout/PageShell";
+import SiteContainer from "@/components/layout/SiteContainer";
 import ProductDetailSections from "@/components/product/ProductDetailSections";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductPricingBlock from "@/components/product/ProductPricingBlock";
@@ -13,6 +14,7 @@ import { Alert } from "@/components/ui";
 import { useCart } from "@/contexts/CartContext";
 import { useProductPriceQuote } from "@/hooks/useProductPriceQuote";
 import { defaultPackagingId, scopePalletTables } from "@/lib/catalog/pdpPricing.mjs";
+import { normalizeBreadcrumbs } from "@/lib/catalog/shopData.mjs";
 import { CommerceApiError } from "@/lib/api/client";
 
 /** @param {{ product: Record<string, unknown> }} props */
@@ -74,27 +76,47 @@ export default function ProductDetailClient({ product }) {
     [product, livePricing, packagingPricing],
   );
 
-  const breadcrumbs = useMemo(() => {
-    const raw = product?.breadcrumbs;
-    return Array.isArray(raw) ? raw : [];
-  }, [product]);
-
   const media = useMemo(() => {
+    const pkg = selectedPackaging && typeof selectedPackaging === "object" ? selectedPackaging : null;
+    const pkgMedia = pkg && Array.isArray(pkg.media) ? pkg.media : null;
+    if (pkgMedia?.length) {
+      return pkgMedia
+        .filter((m) => m && typeof m === "object" && m.url)
+        .map((m) => ({
+          url: String(/** @type {{ url?: string }} */ (m).url),
+          alt: String(/** @type {{ alt?: string }} */ (m).alt ?? product?.name ?? "Product"),
+        }));
+    }
+    const pkgImage =
+      pkg?.image && typeof pkg.image === "object"
+        ? /** @type {{ url?: string; alt?: string }} */ (pkg.image)
+        : null;
+    if (pkgImage?.url) {
+      return [
+        {
+          url: String(pkgImage.url),
+          alt: String(pkgImage.alt ?? product?.name ?? "Product"),
+        },
+      ];
+    }
     const raw = product?.media;
     return Array.isArray(raw) ? raw : [];
-  }, [product]);
+  }, [product, selectedPackaging]);
 
   const relatedProducts = useMemo(() => {
     const raw = product?.relatedProducts;
     return Array.isArray(raw) ? raw : [];
   }, [product]);
 
-  const crumbItems = useMemo(() => {
-    return breadcrumbs.map((b) => {
-      const x = b && typeof b === "object" ? /** @type {{ label?: string; href?: string }} */ (b) : {};
-      return { label: String(x.label ?? ""), href: x.href ? String(x.href) : undefined };
-    });
-  }, [breadcrumbs]);
+  const crumbItems = useMemo(
+    () =>
+      normalizeBreadcrumbs(
+        Array.isArray(product?.breadcrumbs)
+          ? /** @type {Array<{ label?: string; href?: string }>} */ (product.breadcrumbs)
+          : [],
+      ),
+    [product?.breadcrumbs],
+  );
 
   async function onAddToCart(e) {
     e.preventDefault();
@@ -130,8 +152,8 @@ export default function ProductDetailClient({ product }) {
       <PageShell variant="pdp">
         <Alert variant="error">Product not found.</Alert>
         <p className="mt-4">
-          <Link href="/shop" className="text-primary hover:underline">
-            Back to shop
+          <Link href="/products" className="text-primary hover:underline">
+            Back to products
           </Link>
         </p>
       </PageShell>
@@ -139,36 +161,41 @@ export default function ProductDetailClient({ product }) {
   }
 
   return (
-    <PageShell variant="pdp" className="pdp">
-      <div className="pdp__breadcrumbs">
-        <Breadcrumbs items={crumbItems} variant="shop" />
+    <>
+      {/* Same breadcrumb chrome as products listing (CatalogPageTemplate listing). */}
+      <div className="font-geogrotesque pt-8 md:pt-12 pb-4">
+        <SiteContainer>
+          <Breadcrumbs items={crumbItems} variant="shop" />
+        </SiteContainer>
       </div>
 
-      {/* Gallery holds the left column; everything else stacks in the right column. */}
-      <div className="pdp__main">
-        <div className="pdp__gallery-col">
-          <ProductGallery media={media} />
+      <PageShell variant="pdp" className="pdp">
+        {/* Gallery holds the left column; everything else stacks in the right column. */}
+        <div className="pdp__main">
+          <div className="pdp__gallery-col pt-6">
+            <ProductGallery key={packagingOptionId || "default"} media={media} />
+          </div>
+
+          <div className="min-w-0">
+            <ProductPurchasePanel
+              product={product}
+              pricing={livePricing}
+              pricingLoading={pricingLoading}
+              packagingOptionId={packagingOptionId || defaultPackagingIdValue}
+              onPackagingChange={setPackagingOptionId}
+              quantity={quantity}
+              onQuantityChange={setQuantity}
+              onAddToCart={onAddToCart}
+              adding={adding}
+              addMsg={addMsg}
+            />
+            <ProductPricingBlock product={{ ...product, pricing: displayPricing }} />
+            <ProductDetailSections product={product} />
+          </div>
         </div>
 
-        <div className="min-w-0">
-          <ProductPurchasePanel
-            product={product}
-            pricing={livePricing}
-            pricingLoading={pricingLoading}
-            packagingOptionId={packagingOptionId || defaultPackagingIdValue}
-            onPackagingChange={setPackagingOptionId}
-            quantity={quantity}
-            onQuantityChange={setQuantity}
-            onAddToCart={onAddToCart}
-            adding={adding}
-            addMsg={addMsg}
-          />
-          <ProductPricingBlock product={{ ...product, pricing: displayPricing }} />
-          <ProductDetailSections product={product} />
-        </div>
-      </div>
-
-      <RelatedProductsStrip products={relatedProducts} />
-    </PageShell>
+        <RelatedProductsStrip products={relatedProducts} />
+      </PageShell>
+    </>
   );
 }

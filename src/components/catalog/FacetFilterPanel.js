@@ -170,13 +170,13 @@ export default function FacetFilterPanel({ facets = [], selection, onToggle, col
 
     return (
       <aside className={cn(FLAT_SIDEBAR_CLASS, className)}>
-        <p className="font-magistral mb-3 text-xs font-bold tracking-wide text-neutral-900 uppercase">
+        <p className="mb-3 text-xs font-bold tracking-wide text-neutral-900 uppercase">
           Filters
         </p>
         <div className="flex flex-col gap-5">
           {groups.map((group) => (
             <div key={group.key}>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase">{group.label}</p>
+              <p className="mb-2 text-[clamp(0.8125rem,calc(100vw*16/1440),1rem)] font-semibold tracking-wide text-neutral-500 uppercase">{group.label}</p>
               <FacetOptions
                 groupKey={group.key}
                 options={group.options}
@@ -236,7 +236,7 @@ function CollapsibleFacetPanel({ groups, selection, onToggle, className = "" }) 
               aria-controls={panelId}
               onClick={() => toggleGroup(group.key)}
             >
-              <span className="font-magistral text-xs font-bold tracking-wide text-neutral-900 uppercase">
+              <span className="text-[clamp(0.8125rem,calc(100vw*16/1440),1rem)] font-bold tracking-wide text-neutral-900 uppercase">
                 {group.label}
               </span>
               <ChevronIcon open={isOpen} />

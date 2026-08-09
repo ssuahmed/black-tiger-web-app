@@ -509,7 +509,7 @@ function ProductListingInner({
     <CatalogPageTemplate
       variant="listing"
       breadcrumbs={breadcrumbs}
-      title={heading}
+      title={""}
       activeFilters={activeFilters}
       onRemoveFilter={removeFilter}
       onClearFilters={clearAllFilters}
@@ -585,8 +585,8 @@ function ProductListingInner({
                 Clear filters
               </Button>
             ) : (
-              <Link href={routes.shop} className="btn btn-primary">
-                Browse shop
+              <Link href={routes.productsIndex} className="btn btn-primary">
+                Browse products
               </Link>
             )
           }

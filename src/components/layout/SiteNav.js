@@ -11,12 +11,9 @@ export default function SiteNav() {
     <nav className="site-nav font-magistral w-full max-w-full text-white" aria-label="Main">
       <ul className="site-nav__list">
         {NAV_LINKS.map(({ href, label }) => {
-          const active =
-            href === "/shop"
-              ? pathname === "/shop" || pathname.startsWith("/shop/")
-              : href.startsWith("/products")
-                ? pathname === href || pathname.startsWith("/products/")
-                : pathname === href || pathname.startsWith(`${href}/`);
+          const active = href.startsWith("/products")
+            ? pathname === href || pathname.startsWith("/products/")
+            : pathname === href || pathname.startsWith(`${href}/`);
           return (
             <li key={href} className="site-nav__item">
               <Link

@@ -35,7 +35,7 @@ export default function PaymentReturnPageClient() {
     let attempts = 0;
     let timer = 0;
 
-    async function placeOrder() {
+    async function placeOrder(paymentMethod = "card") {
       if (doneRef.current) return;
       setPhase("submitting");
 
@@ -44,7 +44,7 @@ export default function PaymentReturnPageClient() {
       if (!promise) {
         promise = checkoutApi.submitCheckout(activeCartId, {
           confirm: true,
-          paymentMethod: "card",
+          paymentMethod,
         });
         submitLocks.set(activeCartId, promise);
       }
@@ -92,7 +92,11 @@ export default function PaymentReturnPageClient() {
         }
 
         if (intent?.status === "succeeded") {
-          await placeOrder();
+          const payMethod =
+            intent?.method === "apple_pay" || intent?.method === "card"
+              ? intent.method
+              : "card";
+          await placeOrder(payMethod);
           return;
         }
 
@@ -131,7 +135,7 @@ export default function PaymentReturnPageClient() {
 
   if (done || phase === "done") {
     return (
-      <CheckoutLayout formLayout sidebar={<CartOrderSummary variant="payment" lines={lines} totals={totals} />}>
+      <CheckoutLayout formLayout className="co-payment-page font-sf-pro" sidebar={<CartOrderSummary variant="payment" lines={lines} totals={totals} />}>
         <Alert variant="success" role="status">
           Order placed. Your order number is {String(done?.orderNumber ?? "")}.
         </Alert>
@@ -148,7 +152,7 @@ export default function PaymentReturnPageClient() {
 
   if (phase === "failed") {
     return (
-      <CheckoutLayout formLayout sidebar={<CartOrderSummary variant="payment" lines={lines} totals={totals} />}>
+      <CheckoutLayout formLayout className="co-payment-page font-sf-pro" sidebar={<CartOrderSummary variant="payment" lines={lines} totals={totals} />}>
         <Alert variant="error" className="mb-4">
           {error || "Payment failed."}
         </Alert>
@@ -163,7 +167,7 @@ export default function PaymentReturnPageClient() {
   }
 
   return (
-    <CheckoutLayout formLayout sidebar={<CartOrderSummary variant="payment" lines={lines} totals={totals} />}>
+    <CheckoutLayout formLayout className="co-payment-page font-sf-pro" sidebar={<CartOrderSummary variant="payment" lines={lines} totals={totals} />}>
       <Alert variant="info" role="status">
         {phase === "submitting"
           ? "Payment confirmed. Creating your order…"

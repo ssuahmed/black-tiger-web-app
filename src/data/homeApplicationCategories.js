@@ -6,7 +6,7 @@ import { routes } from "@/lib/routes";
  * Product templates must include matching `bt_application_tags` in Odoo.
  */
 
-/** @typedef {{ slug: string; label: string; icon: string }} ApplicationItem */
+/** @typedef {{ slug: string; label: string; icon?: string; imageUrl?: string }} ApplicationItem */
 /** @typedef {{ id: string; title: string; slug: string; applications: ApplicationItem[] }} ApplicationCategory */
 
 /** @type {ApplicationCategory[]} */
@@ -68,7 +68,7 @@ export const HOME_APPLICATION_ACCORDIONS = [
   },
   {
     id: "metalworking",
-    title: "Metalworking Oils",
+    title: "Metal Working Oils",
     slug: "metalworking",
     applications: [
       { slug: "cutting", label: "Cutting", icon: "cutting" },

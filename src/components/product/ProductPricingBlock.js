@@ -1,15 +1,35 @@
 import PalletFigure from "@/components/product/PalletFigure";
+import { formatSarAmount, stripSarCurrencyLabel } from "@/lib/format/money";
+
+const MONEY_KEYS = new Set(["unitPrice", "extPrice"]);
+
+/** @param {unknown} raw */
+function formatTablePrice(raw) {
+  if (raw == null || raw === "") return "";
+  if (typeof raw === "number" && Number.isFinite(raw)) return formatSarAmount(raw);
+  const stripped = stripSarCurrencyLabel(String(raw)).replace(/,/g, "");
+  const n = Number(stripped);
+  return Number.isFinite(n) ? formatSarAmount(n) : stripSarCurrencyLabel(String(raw));
+}
 
 /**
  * Bulk pricing table: banded title, an illustration cell spanning all rows,
  * and the numeric columns to its right.
+ * @param {{
+ *   title: string;
+ *   columns: string[];
+ *   rows: Record<string, unknown>[];
+ *   rowKeys: string[];
+ *   figure: 'boxes' | 'pallet';
+ *   className?: string;
+ * }} props
  */
-function PricingTable({ title, columns, rows, rowKeys, figure }) {
+function PricingTable({ title, columns, rows, rowKeys, figure, className = "" }) {
   if (!rows?.length) return null;
 
   return (
-    <div className="pdp-table-wrap">
-      <table className="pdp-table">
+    <div className={["pdp-table-wrap", className].filter(Boolean).join(" ")}>
+      <table className={["pdp-table", "pdp-table--with-figure", figure === "boxes" ? "pdp-table--partial" : "pdp-table--full"].join(" ")}>
         <caption className="pdp-table__band">{title}</caption>
         <thead>
           <tr>
@@ -31,9 +51,16 @@ function PricingTable({ title, columns, rows, rowKeys, figure }) {
                   <PalletFigure variant={figure} />
                 </td>
               ) : null}
-              {rowKeys.map((key) => (
-                <td key={key}>{String(row[key] ?? "")}</td>
-              ))}
+              {rowKeys.map((key) => {
+                const raw = row[key];
+                if (raw == null || raw === "") {
+                  return <td key={key} />;
+                }
+                if (MONEY_KEYS.has(key)) {
+                  return <td key={key}>{formatTablePrice(raw)}</td>;
+                }
+                return <td key={key}>{String(raw)}</td>;
+              })}
             </tr>
           ))}
         </tbody>

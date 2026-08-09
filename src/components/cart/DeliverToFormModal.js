@@ -27,6 +27,7 @@ export default function DeliverToFormModal({ open, onClose, initialValue, onSave
     let alive = true;
     queueMicrotask(() => {
       if (!alive) return;
+      const primary = initialValue?.recipients?.find((row) => row.id === "primary");
       setDraft({
         ...EMPTY_ADDRESS_FORM,
         contact: { ...EMPTY_ADDRESS_FORM.contact, ...initialValue?.contact },
@@ -37,10 +38,16 @@ export default function DeliverToFormModal({ open, onClose, initialValue, onSave
           label: "",
           addressPreview: "",
         },
+        recipients: Array.isArray(initialValue?.recipients)
+          ? initialValue.recipients
+          : EMPTY_ADDRESS_FORM.recipients,
         location: { ...EMPTY_ADDRESS_FORM.location },
         countryCode: initialValue?.countryCode || EMPTY_ADDRESS_FORM.countryCode,
         phoneCountry: initialValue?.phoneCountry || EMPTY_ADDRESS_FORM.phoneCountry,
         phone: initialValue?.phone || "",
+        recipientName: String(
+          initialValue?.recipientName || primary?.name || "",
+        ).trim(),
         email: initialValue?.email || initialValue?.contact?.email || "",
       });
       setShowMap(true);
@@ -69,24 +76,29 @@ export default function DeliverToFormModal({ open, onClose, initialValue, onSave
   function applyResolvedLocation(resolved) {
     const countryCode = String(resolved.countryCode || draft.countryCode || "SA");
     const selected = COUNTRIES.find((item) => item.code === countryCode);
+    const placeName = String(resolved.placeName || resolved.name || resolved.landmark || "").trim();
     setDraft((current) => ({
       ...current,
       countryCode,
       phoneCountry: selected?.phone || current.phoneCountry,
-      buildingNo: String(resolved.buildingNo || current.buildingNo || ""),
-      street: String(resolved.street || current.street || ""),
-      secondary: String(resolved.secondary || current.secondary || ""),
-      district: String(resolved.district || current.district || ""),
-      city: String(resolved.city || current.city || ""),
-      stateProvince: String(resolved.stateCode || resolved.stateProvince || current.stateProvince || ""),
-      postalCode: String(resolved.postalCode || current.postalCode || ""),
-      nationalAddress: String(resolved.nationalAddress || resolved.title || current.nationalAddress || ""),
-      landmark: String(resolved.landmark || current.landmark || ""),
+      buildingNo: String(resolved.buildingNo || ""),
+      street: String(resolved.street || ""),
+      secondary: String(resolved.secondary || ""),
+      district: String(resolved.district || resolved.neighborhood || ""),
+      city: String(resolved.city || ""),
+      stateProvince: String(resolved.stateProvince || resolved.stateCode || ""),
+      postalCode: String(resolved.postalCode || ""),
+      nationalAddress: String(resolved.nationalAddress || ""),
+      landmark: String(resolved.landmark || placeName || ""),
       location: {
         lat: Number(resolved.lat ?? resolved.latitude ?? current.location.lat),
         lng: Number(resolved.lng ?? resolved.longitude ?? current.location.lng),
         placeId: String(resolved.placeId || ""),
         formattedAddress: String(resolved.formattedAddress || ""),
+      },
+      delivery: {
+        ...current.delivery,
+        label: current.delivery.label || placeName || current.delivery.label,
       },
     }));
     setShowMap(false);
@@ -99,8 +111,20 @@ export default function DeliverToFormModal({ open, onClose, initialValue, onSave
       [draft.buildingNo, draft.street, draft.district, draft.city, draft.postalCode]
         .filter(Boolean)
         .join(", ");
+    const recipientName = String(draft.recipientName || "").trim();
+    const phoneDisplay = `${draft.phoneCountry || ""}${draft.phone || ""}`.trim();
     onSave?.({
       ...draft,
+      recipientName,
+      recipients: (draft.recipients || EMPTY_ADDRESS_FORM.recipients).map((row, index) =>
+        index === 0
+          ? {
+              ...row,
+              name: recipientName || row.name,
+              phone: phoneDisplay || row.phone,
+            }
+          : row,
+      ),
       delivery: {
         ...draft.delivery,
         label: draft.delivery.label || `${country?.name || draft.countryCode} address`,
@@ -200,7 +224,7 @@ export default function DeliverToFormModal({ open, onClose, initialValue, onSave
             ))}
             {isSaudi ? (
               <label className="text-sm font-semibold sm:col-span-2">
-                National address <span className="font-normal text-neutral-500">(or enter postcode)</span>
+                Short address <span className="font-normal text-neutral-500">(or enter postcode)</span>
                 <input
                   className={`${FIELD_CLASS} mt-1`}
                   value={draft.nationalAddress}
@@ -245,20 +269,36 @@ export default function DeliverToFormModal({ open, onClose, initialValue, onSave
               </>
             ) : null}
             <label className="text-sm font-semibold sm:col-span-2">
+              Recipient name
+              <input
+                className={`${FIELD_CLASS} mt-1`}
+                value={draft.recipientName}
+                onChange={(event) => update("recipientName", event.target.value)}
+                required
+                autoComplete="name"
+                placeholder="Full name"
+              />
+            </label>
+            <label className="text-sm font-semibold sm:col-span-2">
               Phone
-              <span className="mt-1 flex">
+              <span className="co-phone-field mt-1">
                 <input
-                  className={`${FIELD_CLASS} w-24 border-r-0`}
+                  className="co-phone-field__dial"
                   value={draft.phoneCountry}
                   onChange={(event) => update("phoneCountry", event.target.value)}
                   aria-label="Phone country code"
+                  inputMode="tel"
                 />
+                <span className="co-phone-field__sep" aria-hidden />
                 <input
-                  className={FIELD_CLASS}
+                  className="co-phone-field__number"
                   value={draft.phone}
                   onChange={(event) => update("phone", event.target.value)}
                   required
                   type="tel"
+                  inputMode="tel"
+                  placeholder="5X XXX XXXX"
+                  aria-label="Phone number"
                 />
               </span>
             </label>

@@ -14,7 +14,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/**/*.test.mjs",
+    "test": "node --test tests/account-map.test.mjs tests/auth-redirect.test.mjs tests/cart-errors.test.mjs tests/cart-map.test.mjs tests/checkout-map.test.mjs tests/checkout-parity.test.mjs tests/lists-map.test.mjs tests/pdp-pricing.test.mjs tests/shop-data.normalize.test.mjs",
     "test:contract": "node tests/shop-api.contract.mjs",
     "test:e2e": "playwright test",
     "test:shop": "node --test tests/shop-data.normalize.test.mjs && node tests/shop-api.contract.mjs && playwright test tests/e2e/shop.spec.js",

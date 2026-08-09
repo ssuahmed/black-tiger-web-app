@@ -25,13 +25,13 @@ function ProductPanel({ panel }) {
         className={cn(
           "relative z-[1] flex h-full min-h-0 flex-col",
           "p-2.5 sm:p-3",
-          "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-end lg:gap-2 lg:p-4",
+          "lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-stretch lg:gap-2 lg:p-4",
         )}
       >
         <div
           className={cn(
-            "flex shrink-0 flex-col items-start justify-start gap-1.5 lg:gap-[clamp(0.75rem,calc(100vw*20/1920),1.25rem)]",
-            isQuality && "lg:justify-center lg:self-center",
+            "flex shrink-0 flex-col items-start justify-start gap-1.5",
+            "lg:justify-center lg:self-center lg:gap-[clamp(0.75rem,calc(100vw*20/1920),1.25rem)]",
           )}
         >
           <h2
@@ -62,14 +62,14 @@ function ProductPanel({ panel }) {
           ) : null}
         </div>
 
-        <div className="flex min-h-0 flex-1 items-end justify-center pt-2 lg:flex-none lg:self-end lg:pt-0">
+        <div className="flex min-h-0 flex-1 items-end justify-center pt-2 lg:h-full lg:self-stretch lg:pt-0">
           <Image
             src={panel.productImage}
             alt={panel.productAlt}
             width={isQuality ? 420 : 280}
             height={isQuality ? 320 : 380}
             className={cn(
-              "h-full max-h-full w-auto max-w-full object-contain lg:h-auto lg:max-h-[45%]",
+              "h-full max-h-full w-auto max-w-full object-contain lg:h-full lg:max-h-full",
               isQuality ? "object-bottom-right" : "object-bottom",
             )}
             sizes="(max-width: 1024px) 50vw, 25vw"
@@ -88,7 +88,7 @@ export default function HomeProductStrip({ panels = HOME_PRODUCT_STRIP }) {
 
   return (
     <section
-      className="mt-1 w-full max-w-full bg-white lg:h-[min(28vh,20rem)]"
+      className="w-full max-w-full bg-white lg:h-[min(28vh,20rem)]"
       aria-label="Featured product lines"
     >
       <div className="grid h-full w-full auto-rows-[minmax(14rem,1fr)] grid-cols-2 gap-px bg-white sm:auto-rows-[minmax(17rem,1fr)] lg:auto-rows-fr lg:grid-cols-4 lg:grid-rows-1">

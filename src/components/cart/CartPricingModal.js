@@ -5,8 +5,8 @@ import Modal from "@/components/ui/Modal";
 import ProductPricingBlock from "@/components/product/ProductPricingBlock";
 import { getProductBySlug, getProductPriceQuote } from "@/lib/api/catalog";
 import { scopePalletTables } from "@/lib/catalog/pdpPricing.mjs";
-import { formatSarSymbol } from "@/lib/format/money";
 import { formatApiError } from "@/lib/formatApiError";
+import { formatSarAmount } from "@/lib/format/money";
 
 /**
  * Cart volume-pricing modal (Figma Pages 22–23).
@@ -139,30 +139,40 @@ export default function CartPricingModal({ open, line, onClose, onUpdateQuantity
         </div>
 
         <div className="co-cart-pricing__line-table">
-          <table className="pdp-table">
-            <thead>
-              <tr>
-                <th>Packaging</th>
-                <th>Full/Partial Pallet</th>
-                <th>Qty</th>
-                <th>Unit Price</th>
-                <th>EXT Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{String(lineSummary?.packagingLabel ?? line?.packagingLabel ?? "")}</td>
-                <td>{formatPalletType(lineSummary?.palletType ?? line?.palletType)}</td>
-                <td>{quantity}</td>
-                <td>{formatSarSymbol(unit)}</td>
-                <td>{formatSarSymbol(total)}</td>
-              </tr>
-              <tr className="pdp-table__total">
-                <td colSpan={4}>TOTAL PRICE</td>
-                <td>{formatSarSymbol(total)}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="pdp-table-wrap">
+            <table className="pdp-table pdp-table--summary">
+              <thead>
+                <tr>
+                  <th scope="col">Packaging</th>
+                  <th scope="col">Full/Partial Pallet</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col" className="pdp-table__unit-head">
+                    <span>Unit</span>
+                    <span>Price</span>
+                  </th>
+                  <th scope="col" className="pdp-table__ext-head">
+                    EXT Price
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{String(lineSummary?.packagingLabel ?? line?.packagingLabel ?? "")}</td>
+                  <td>{formatPalletType(lineSummary?.palletType ?? line?.palletType)}</td>
+                  <td>{quantity}</td>
+                  <td>{formatSarAmount(unit)}</td>
+                  <td className="pdp-table__ext">{formatSarAmount(total)}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="pdp-table__total-row" aria-label="Total price">
+              <div className="pdp-table__total-spacer" aria-hidden="true" />
+              <div className="pdp-table__total-inner">
+                <span className="pdp-table__total-label">TOTAL PRICE</span>
+                <span className="pdp-table__total-value">{formatSarAmount(total)}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {product && displayPricing ? (

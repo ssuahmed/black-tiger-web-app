@@ -1,9 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Spinner } from "@/components/ui";
+import { Money, Spinner } from "@/components/ui";
 
 import { cn } from "@/lib/cn";
+import { formatSarAmount, stripSarCurrencyLabel } from "@/lib/format/money";
+
+/** Plain table amount: no currency symbol, always two decimal places. */
+function formatTablePrice(value) {
+  if (value == null || value === "") return "";
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return formatSarAmount(value);
+  }
+  const stripped = stripSarCurrencyLabel(String(value)).replace(/,/g, "");
+  const n = Number(stripped);
+  return Number.isFinite(n) ? formatSarAmount(n) : stripSarCurrencyLabel(String(value));
+}
 
 /** @param {Record<string, unknown>} props */
 export default function ProductPurchasePanel({
@@ -28,7 +40,7 @@ export default function ProductPurchasePanel({
     pricingOverride && typeof pricingOverride === "object" ? pricingOverride : productPricing;
   const formattedPrice =
     pricing.formattedUnitPrice ??
-    (pricing.unitPrice != null ? `${Number(pricing.unitPrice).toLocaleString("en-SA")} SAR` : "");
+    (pricing.unitPrice != null ? formatSarAmount(Number(pricing.unitPrice)) : "");
   const lineRows = Array.isArray(pricing.lineSummaryRows) ? pricing.lineSummaryRows : [];
   const totalPrice = pricing.totalPrice ? String(pricing.totalPrice) : "";
 
@@ -38,7 +50,6 @@ export default function ProductPurchasePanel({
   const selectedLabel = selectedOption ? String(selectedOption.label ?? "") : "";
 
   const priceText = String(formattedPrice);
-  const showRiyalSymbol = /\bSAR\b/i.test(priceText);
 
   return (
     <div className="pdp-buy">
@@ -79,8 +90,7 @@ export default function ProductPurchasePanel({
 
       {priceText ? (
         <p className={cn("pdp-buy__price", pricingLoading && "pdp-buy__price--loading")}>
-          {showRiyalSymbol ? <RiyalSymbol /> : null}
-          {priceText}
+          <Money value={priceText} symbolClassName="pdp-buy__price-symbol" />
         </p>
       ) : null}
 
@@ -120,14 +130,19 @@ export default function ProductPurchasePanel({
 
       {lineRows.length > 0 ? (
         <div className="pdp-table-wrap">
-          <table className="pdp-table">
+          <table className="pdp-table pdp-table--summary">
             <thead>
               <tr>
                 <th scope="col">Packaging</th>
                 <th scope="col">Full/Partial Pallet</th>
-                <th scope="col">QTY</th>
-                <th scope="col">Unit Price</th>
-                <th scope="col">EXT Price</th>
+                <th scope="col">Qty</th>
+                <th scope="col" className="pdp-table__unit-head">
+                  <span>Unit</span>
+                  <span>Price</span>
+                </th>
+                <th scope="col" className="pdp-table__ext-head">
+                  EXT Price
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -138,40 +153,26 @@ export default function ProductPurchasePanel({
                     <td>{String(r.packaging ?? "")}</td>
                     <td>{String(r.pallet ?? "")}</td>
                     <td>{String(r.qty ?? "")}</td>
-                    <td>{String(r.unitPrice ?? "")}</td>
-                    <td>{String(r.extPrice ?? "")}</td>
+                    <td>{r.unitPrice ? formatTablePrice(r.unitPrice) : ""}</td>
+                    <td className="pdp-table__ext">
+                      {r.extPrice ? formatTablePrice(r.extPrice) : ""}
+                    </td>
                   </tr>
                 );
               })}
-              {totalPrice ? (
-                <tr className="pdp-table__total">
-                  <td colSpan={4}>TOTAL PRICE</td>
-                  <td>{totalPrice}</td>
-                </tr>
-              ) : null}
             </tbody>
           </table>
+          {totalPrice ? (
+            <div className="pdp-table__total-row" aria-label="Total price">
+              <div className="pdp-table__total-spacer" aria-hidden="true" />
+              <div className="pdp-table__total-inner">
+                <span className="pdp-table__total-label">TOTAL PRICE</span>
+                <span className="pdp-table__total-value">{formatTablePrice(totalPrice)}</span>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
-  );
-}
-
-function RiyalSymbol() {
-  return (
-    <svg
-      className="pdp-buy__price-symbol"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <g stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-        <path d="M15.6 2.4v8.4c0 2.5-2 4.5-4.5 4.5" />
-        <path d="M9.2 2.4v9.2" />
-        <path d="M2.8 17.3h18.4" />
-        <path d="M2.8 21h18.4" />
-      </g>
-    </svg>
   );
 }
