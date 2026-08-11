@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Payment method selector for checkout.
+ * Visibility of Apple Pay / hosted copy depends on `NEXT_PUBLIC_PAYMENT_GATEWAY`
+ * (`paytabs` | `sandbox` | `placeholder`). Actual charging is handled by PaymentPageClient.
+ */
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import ContactCheckoutSection from "@/components/cart/ContactCheckoutSection";

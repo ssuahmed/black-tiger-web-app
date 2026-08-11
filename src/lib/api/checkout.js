@@ -1,3 +1,10 @@
+/**
+ * Checkout orchestration against the Commerce API (`/v1/checkout/*`).
+ *
+ * Typical flow: address → shipping options → shipping selection → payment-intent
+ * (hosted PayTabs redirect or on-site methods) → confirm → submit order.
+ */
+
 import { commerceFetch } from "./client.js";
 
 export function setCheckoutAddress(cartId, body) {

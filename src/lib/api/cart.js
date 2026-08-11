@@ -1,3 +1,8 @@
+/**
+ * Cart CRUD helpers for the Commerce API (`/v1/cart/*`).
+ * Cart identity is stored client-side (`bt_cart_id`); CartContext owns create/refresh orchestration.
+ */
+
 import { commerceFetch } from "./client.js";
 
 export function createCart(body) {

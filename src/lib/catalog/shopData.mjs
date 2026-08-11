@@ -1,5 +1,6 @@
 /**
- * Normalize Commerce API catalog payloads for the products catalog.
+ * Normalize Commerce API catalog payloads (categories, product lists, breadcrumbs)
+ * into stable shapes for PLP / shop UI, including Odoo vs mock `dataSource` tagging.
  */
 
 import { canonicalizeStorefrontHref } from "../routes.js";

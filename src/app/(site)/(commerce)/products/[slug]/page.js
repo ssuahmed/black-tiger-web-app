@@ -1,4 +1,3 @@
-import RequireAuth from "@/components/auth/RequireAuth";
 import ProductListingClient from "../ProductListingClient";
 import ProductDetailClient from "./ProductDetailClient";
 import { getCategoryBySlug, getProductBySlug, listCategories, listProducts } from "@/lib/api/catalog";
@@ -99,9 +98,5 @@ export default async function ProductSlugPage(props) {
     notFound();
   }
 
-  return (
-    <RequireAuth>
-      <ProductDetailClient product={product} />
-    </RequireAuth>
-  );
+  return <ProductDetailClient product={product} />;
 }

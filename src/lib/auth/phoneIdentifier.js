@@ -1,3 +1,8 @@
+/**
+ * Phone identifier helpers for the auth UI: dial-code list, national sanitization,
+ * and E.164 composition before calling `/v1/auth/*`.
+ */
+
 /** Dial codes shown in the sign-in phone field (noon-style). */
 export const AUTH_DIAL_CODES = [
   { code: "SA", dial: "+966", label: "Saudi Arabia" },

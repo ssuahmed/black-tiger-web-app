@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Gate checkout steps behind an authenticated session.
+ * Guests are redirected to sign-in with `intent=login` and a `returnTo` path.
+ */
+
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";

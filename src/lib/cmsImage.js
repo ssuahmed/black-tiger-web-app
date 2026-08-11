@@ -1,4 +1,10 @@
 /**
+ * next/image helpers for CMS / Odoo media URLs.
+ * Remote Odoo and Commerce media proxies are marked `unoptimized` because they often lack
+ * stable cacheable dimensions or conflict with the image optimizer.
+ */
+
+/**
  * Props for next/image when src may be an Odoo /web/image URL, Commerce API media proxy, or a local static path.
  * @param {string} src
  */

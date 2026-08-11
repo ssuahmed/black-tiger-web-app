@@ -1,3 +1,7 @@
+/**
+ * Map saved-list API rows into list/summary and line-item view models for account UI.
+ */
+
 /** @param {Record<string, unknown>} row */
 export function normalizeListSummary(row) {
   return {

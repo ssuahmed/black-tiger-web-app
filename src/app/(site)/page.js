@@ -52,7 +52,7 @@ export default async function Home() {
         backgroundImage={`url('${home.section3.backgroundImage}')`}
         aspectRatio="1440/420"
         preserveAspectOnMobile={false}
-        className="min-h-[16rem] sm:min-h-[22rem]"
+        className="min-h-[16rem] sm:min-h-[22rem] mb-0.5"
       >
         <SiteContainer className="flex h-full flex-col items-end justify-end py-10 sm:py-14">
           <Link

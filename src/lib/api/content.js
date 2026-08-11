@@ -1,3 +1,8 @@
+/**
+ * CMS page content from the Commerce API (`/v1/content/pages`).
+ * Failures resolve to empty/null so marketing pages can fall back to static defaults.
+ */
+
 import { commerceFetch } from "@/lib/api/client";
 
 const CMS_REVALIDATE = { next: { revalidate: 60 } };

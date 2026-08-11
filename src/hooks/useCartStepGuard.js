@@ -1,10 +1,13 @@
 "use client";
 
+/**
+ * Lightweight empty-cart redirect for cart-adjacent pages that do not need summary gates.
+ */
+
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 /**
- * Redirect when cart is empty after ready (mock checkout steps).
  * @param {{ ready: boolean; isEmpty: boolean; redirectTo?: string }} options
  */
 export function useCartStepGuard({ ready, isEmpty, redirectTo = "/cart" }) {

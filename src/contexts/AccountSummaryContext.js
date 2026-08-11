@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Cached account summary (credits, business flags, etc.) for the account shell and nav badges.
+ * Loaded once on mount; callers can `refresh()` after profile or KYC mutations.
+ */
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getAccountSummary } from "@/lib/api/account";
 

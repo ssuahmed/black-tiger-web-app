@@ -1,3 +1,8 @@
+/**
+ * Persist the active commerce cart id in `localStorage` so guest carts survive reloads.
+ * Cleared when the cart is missing server-side or after successful checkout.
+ */
+
 export const BT_CART_ID_KEY = "bt_cart_id";
 
 export function readCartId() {

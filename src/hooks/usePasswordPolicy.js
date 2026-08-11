@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Loads password policy rules from `/v1/auth/password/policy`, falling back to a local
+ * default set when the API is unavailable so signup/reset UIs still show checklist items.
+ */
+
 import { useEffect, useState } from "react";
 import * as authApi from "@/lib/api/auth";
 

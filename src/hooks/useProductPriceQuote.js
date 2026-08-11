@@ -1,12 +1,15 @@
 "use client";
 
+/**
+ * Debounced live PDP price quote: posts packaging + qty (+ inferred pallet tier) and merges
+ * the response onto catalog fallback pricing for display.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { getProductPriceQuote } from "@/lib/api/catalog";
 import { inferPalletType, mergeQuotePricing } from "@/lib/catalog/pdpPricing.mjs";
 
 /**
- * Live price quote when packaging or quantity changes.
- *
  * @param {{
  *   slug: string;
  *   packagingOptionId: string;

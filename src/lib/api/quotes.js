@@ -1,3 +1,8 @@
+/**
+ * Quote creation and PDF download against the Commerce API (`/v1/quotes/*`).
+ * PDF binary download uses raw `fetch` (not commerceFetch) because the response is a blob, not a JSON envelope.
+ */
+
 import { commerceFetch, getCommerceApiBaseUrl } from "./client.js";
 import { readAccessToken } from "../authStorage.js";
 import { downloadBase64Pdf } from "../downloadPdf.js";

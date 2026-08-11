@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * Global cart session: loads/creates a Commerce API cart keyed by `bt_cart_id` in localStorage.
+ *
+ * Stale carts (404) are dropped and recreated. Mutations always refresh the full cart snapshot
+ * so totals/logistics stay consistent across checkout steps.
+ */
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as cartApi from "@/lib/api/cart";
 import { isCartNotFoundError } from "@/lib/cart/cartErrors";
@@ -50,6 +57,7 @@ export function CartProvider({ children }) {
         return data;
       } catch (err) {
         if (isCartNotFoundError(err)) {
+          // Only clear storage if this id is still the active one (avoid racing a newer cart).
           const stillCurrent = readStoredCartId() === cid;
           if (stillCurrent) {
             resetCartSession();
@@ -64,6 +72,7 @@ export function CartProvider({ children }) {
     [cartId, resetCartSession],
   );
 
+  /** Ensure a usable cart id exists (create if missing/stale). */
   const ensureCart = useCallback(async () => {
     let cid = cartId ?? readStoredCartId();
     if (!cid) {
@@ -85,6 +94,7 @@ export function CartProvider({ children }) {
       try {
         await cartApi.addCartItem(cid, line);
       } catch (err) {
+        // Retry once on a freshly created cart when the stored id was deleted server-side.
         if (!isCartNotFoundError(err)) throw err;
         resetCartSession();
         cid = await createNewCart();

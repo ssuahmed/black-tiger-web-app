@@ -1,3 +1,8 @@
+/**
+ * Normalize checkout summary / shipping-option API payloads for the multi-step checkout UI.
+ * `checkoutStepAllowed` encodes the address → shipping → payment prerequisite gates.
+ */
+
 /** @param {unknown} payload */
 export function unwrapShippingOptionsPayload(payload) {
   if (Array.isArray(payload)) {

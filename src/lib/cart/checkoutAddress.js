@@ -1,3 +1,8 @@
+/**
+ * Map the checkout address UI form into the Commerce API `PUT /checkout/:cartId/address` body.
+ * Prefers map/saved-address fields over manual leftovers; omits business KYC when the profile is already complete.
+ */
+
 /** @param {import("@/lib/cart/addressFormDefaults").EMPTY_ADDRESS_FORM} form @param {{ displayName?: string; email?: string; phone?: string } | null | undefined} user @param {{ businessProfileComplete?: boolean; companyName?: string }} [options] */
 export function buildCheckoutAddressPayload(form, user, options = {}) {
   const recipient = form.recipients?.find((row) => row.id === form.delivery?.recipientId);

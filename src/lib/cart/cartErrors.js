@@ -1,4 +1,8 @@
-/** @param {unknown} err */
+/**
+ * Detect stale cart ids (404 / "cart not found") so CartContext can recreate the session.
+ *
+ * @param {unknown} err
+ */
 export function isCartNotFoundError(err) {
   if (!err || typeof err !== "object") return false;
   const e = /** @type {{ name?: string; status?: number; message?: string }} */ (err);

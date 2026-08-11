@@ -1,3 +1,8 @@
+/**
+ * Merge CMS home-page blocks with static defaults for the storefront landing page.
+ * Missing or unpublished CMS fields fall back to the hardcoded marketing copy/data modules.
+ */
+
 import { HOME_APPLICATION_ACCORDIONS } from "@/data/homeApplicationCategories";
 import { HOME_PRODUCT_STRIP } from "@/data/homeProductStrip";
 import { HOME_SECTION_4 } from "@/data/homeSection4Content";

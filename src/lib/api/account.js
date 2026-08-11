@@ -1,3 +1,8 @@
+/**
+ * Authenticated account / KYC / orders helpers for the Commerce API (`/v1/account/*`).
+ * Multipart uploads (documents, wire receipts) pass FormData so commerceFetch skips JSON encoding.
+ */
+
 import { buildQueryString, commerceFetch } from "./client.js";
 
 export function getAccountSummary() {

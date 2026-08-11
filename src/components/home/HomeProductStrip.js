@@ -11,12 +11,10 @@ function ProductPanel({ panel }) {
   return (
     <article className="relative box-border h-full min-h-0 overflow-hidden">
       <div
-        className={cn(
-          "pointer-events-none absolute inset-0 bg-black bg-center bg-no-repeat",
-          isQuality ? "bg-[length:100%_100%]" : "bg-cover",
-        )}
+        className="pointer-events-none absolute inset-0 bg-white bg-no-repeat [background-position:left_bottom] [background-size:102%_103%]"
         style={{
           backgroundImage: `url(${isQuality ? panel.background : panel.smoke})`,
+          inset: '2px 2px 3px 0px'
         }}
         aria-hidden
       />
@@ -91,7 +89,7 @@ export default function HomeProductStrip({ panels = HOME_PRODUCT_STRIP }) {
       className="w-full max-w-full bg-white lg:h-[min(28vh,20rem)]"
       aria-label="Featured product lines"
     >
-      <div className="grid h-full w-full auto-rows-[minmax(14rem,1fr)] grid-cols-2 gap-px bg-white sm:auto-rows-[minmax(17rem,1fr)] lg:auto-rows-fr lg:grid-cols-4 lg:grid-rows-1">
+      <div className="grid h-full w-full auto-rows-[minmax(14rem,1fr)] grid-cols-2 gap-0 sm:auto-rows-[minmax(17rem,1fr)] lg:auto-rows-fr lg:grid-cols-4 lg:grid-rows-1">
         {panels.map((panel) => (
           <ProductPanel key={panel.id} panel={panel} />
         ))}

@@ -3,7 +3,7 @@ export default function HomeSection3() {
   return (
     <section
       className="home-section-3"
-      style={{ backgroundImage: "url('/images/home/section-3.png')" }}
+      style={{ backgroundImage: "url('/images/home/section-3.png')", marginBottom:'20px' }}
       aria-label="Brand feature banner"
     />
   );

@@ -1,3 +1,8 @@
+/**
+ * Client-side password rule evaluation. Rule codes match the Commerce API policy
+ * (`MIN_LENGTH`, `SPECIAL_CHAR`, …); labels are storefront display copy.
+ */
+
 /** Display copy aligned to auth design (API codes stay the source of truth). */
 export const PASSWORD_RULE_LABELS = {
   MIN_LENGTH: "8 characters",

@@ -1,3 +1,13 @@
+/**
+ * Commerce API HTTP client for the Black Tiger storefront.
+ *
+ * All domain helpers under `src/lib/api/*` call `commerceFetch`, which:
+ * - Targets `NEXT_PUBLIC_COMMERCE_API_URL` (default localhost:3001/v1)
+ * - Attaches the bearer access token from localStorage (browser only)
+ * - On 401, single-flights a refresh and retries once (except auth/* paths)
+ * - Unwraps the `{ success, data, error }` envelope into `data` or `CommerceApiError`
+ */
+
 import {
   BT_ACCESS_TOKEN_KEY,
   BT_REFRESH_TOKEN_KEY,
@@ -41,6 +51,7 @@ export function setSessionExpiredHandler(fn) {
   onSessionExpired = fn;
 }
 
+/** Shared promise so concurrent 401s trigger only one refresh. */
 let refreshInFlight = null;
 
 function isAuthPath(path) {
@@ -55,6 +66,7 @@ async function refreshAccessToken() {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
       const base = getCommerceApiBaseUrl();
+      // Bypass commerceFetch to avoid recursive 401 → refresh loops.
       const res = await fetch(joinUrl(base, "auth/refresh"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -81,8 +93,10 @@ async function refreshAccessToken() {
 
 /**
  * Normalize JSON envelope `{ success, data, error }` from Commerce API.
+ * Returns `data` on success; throws `CommerceApiError` on business or HTTP failure.
+ *
  * @template T
- * @param {string} path - Path relative to API base (e.g. `"auth/login"`)
+ * @param {string} path - Path relative to API base (e.g. `"auth/login"`), or absolute URL
  * @param {RequestInit & { json?: unknown; _retry?: boolean }} [init]
  * @returns {Promise<T | undefined>}
  */
@@ -107,6 +121,7 @@ export async function commerceFetch(path, init = {}) {
     !(body instanceof Blob) &&
     !(body instanceof URLSearchParams)
   ) {
+    // Plain objects (but not FormData/Blob) are JSON-encoded for convenience.
     body = JSON.stringify(body);
     if (!headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
@@ -122,6 +137,8 @@ export async function commerceFetch(path, init = {}) {
 
   const res = await fetch(url, { ...rest, headers, body });
 
+  // Transparent token rotation: refresh once, then retry the original request.
+  // Skip auth/* so login failures and refresh itself are not looped.
   if (
     res.status === 401 &&
     !_retry &&
@@ -152,6 +169,7 @@ export async function commerceFetch(path, init = {}) {
     }
   }
 
+  // Prefer the commerce envelope when present; otherwise fall through to raw JSON / HTTP status.
   const envelope =
     parsed && typeof parsed === "object" && "success" in /** @type {Record<string, unknown>} */ (parsed)
       ? /** @type {{ success?: boolean; data?: T; error?: CommerceApiErrorPayload; meta?: unknown }} */ (parsed)
@@ -178,6 +196,7 @@ export async function commerceFetch(path, init = {}) {
 }
 
 /**
+ * Build `?a=1&b=2` from a params object; arrays become repeated keys.
  * @param {Record<string, unknown>} [params]
  */
 export function buildQueryString(params) {

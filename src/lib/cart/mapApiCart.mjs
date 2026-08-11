@@ -1,3 +1,8 @@
+/**
+ * Map Commerce API cart payloads into shapes expected by cart/checkout UI components.
+ * Totals fall back to line sums and a 15% VAT estimate when the API omits fields.
+ */
+
 /** @param {number} amount */
 export function formatSarSymbol(amount) {
   return `\uFDFC ${amount.toLocaleString("en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

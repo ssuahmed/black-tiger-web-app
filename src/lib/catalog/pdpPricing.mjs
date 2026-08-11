@@ -1,5 +1,7 @@
 /**
  * PDP / PLP pricing helpers — packaging variants and live price quotes.
+ * Infers pallet tier from quantity tables, scopes variant-specific pallet matrices,
+ * and merges quote responses onto catalog fallback pricing for display.
  */
 
 import { formatSarAmount } from "../format/money.js";

@@ -1,3 +1,7 @@
+/**
+ * User-facing message from thrown API/errors; prefers CommerceApiError.message.
+ */
+
 import { CommerceApiError } from "@/lib/api/client";
 
 /** @param {unknown} err @param {string} [fallback] */

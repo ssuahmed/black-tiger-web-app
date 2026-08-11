@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Site-wide Ask AI overlay: opens via `bt:open-ask-ai` or `#ask-ai` hash,
+ * creates an optional chat session, posts messages to `/v1/chat/messages`,
+ * and renders assistant replies (with product cards) plus daily usage hints.
+ */
+
 import { useEffect, useId, useRef, useState } from "react";
 import ProductCard from "@/components/catalog/ProductCard";
 import { OPEN_ASK_AI_EVENT } from "@/components/chat/askAiEvents";
@@ -226,6 +232,7 @@ export default function ProductChatWidget() {
     };
   }, [open]);
 
+  // Best-effort session create on first open; messaging still works if this fails.
   useEffect(() => {
     if (!open || sessionId) return;
     let alive = true;
@@ -268,6 +275,7 @@ export default function ProductChatWidget() {
         message: text,
         sessionId: sessionId || undefined,
       });
+      // Server may mint/replace the session id on the first message.
       if (res?.sessionId && res.sessionId !== sessionId) {
         setSessionId(String(res.sessionId));
       }

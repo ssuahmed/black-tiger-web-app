@@ -1,3 +1,8 @@
+/**
+ * Catalog / PDP helpers for the Commerce API (`/v1/catalog/*`).
+ * Product detail fetch uses a short Next.js revalidate window for SSR caching.
+ */
+
 import { buildQueryString, commerceFetch } from "./client.js";
 
 export function listCategories() {

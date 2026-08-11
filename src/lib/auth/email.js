@@ -1,3 +1,8 @@
+/**
+ * Auth identifier validation for sign-in / sign-up forms (email vs GCC mobile dial rules).
+ * Kept client-side for immediate UX; the Commerce API still validates on submit.
+ */
+
 /** Practical email check aligned with common HTML5 / signup expectations. */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 

@@ -1,3 +1,7 @@
+/**
+ * Account-area formatters and normalizers: orders, addresses, and form prefills from API rows.
+ */
+
 /** @param {string | null | undefined} iso */
 export function formatAccountDate(iso) {
   if (!iso) return "—";

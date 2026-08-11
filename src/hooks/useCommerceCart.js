@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * View-model hook over CartContext: ensures a cart exists, then maps API lines/totals/promo
+ * into UI-friendly shapes used by cart and checkout pages.
+ */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { mapApiCartLine, mapApiCartTotals, mapApiLogistics, mapApiPromo } from "@/lib/cart/mapApiCart.mjs";

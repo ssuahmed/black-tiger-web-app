@@ -1,3 +1,8 @@
+/**
+ * Auth endpoints against the Commerce API (`/v1/auth/*`).
+ * Callers persist tokens via AuthContext / authStorage — these helpers only perform HTTP.
+ */
+
 import { commerceFetch } from "./client.js";
 
 export function getPasswordPolicy() {

@@ -1,3 +1,9 @@
+/**
+ * Persistent auth session in `localStorage` (access + refresh tokens and user snapshot).
+ * SSR-safe: all readers/writers no-op when `window` is undefined.
+ * Cleared by commerceFetch when refresh fails, and by AuthContext on logout.
+ */
+
 export const BT_ACCESS_TOKEN_KEY = "bt_access_token";
 export const BT_REFRESH_TOKEN_KEY = "bt_refresh_token";
 export const BT_USER_KEY = "bt_user";

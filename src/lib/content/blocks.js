@@ -1,7 +1,11 @@
+/**
+ * Resolve keyed CMS blocks from Commerce API / Odoo `bt.website.page` payloads.
+ * Each helper returns a typed field (text, html, image, CTA, JSON) with a static fallback.
+ */
+
 import { canonicalizeStorefrontHref } from "@/lib/routes";
 
 /**
- * Resolve CMS blocks from Commerce API / Odoo `bt.website.page`.
  * @param {Record<string, { text?: string | null; html?: string | null; imageUrl?: string | null; link?: { label?: string | null; href?: string | null } | null }> | undefined} blocks
  * @param {string} key
  * @param {string} [fallback]

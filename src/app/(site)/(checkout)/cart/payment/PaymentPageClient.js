@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Checkout payment step: creates a payment intent, redirects to PayTabs for card/Apple Pay,
+ * or submits immediately for COD/wire. Wire success routes to the receipt upload page.
+ */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -96,10 +101,12 @@ export default function PaymentPageClient() {
     try {
       const intent = await checkoutApi.createPaymentIntent(activeCartId, { method });
       const hosted = method === "card" || method === "apple_pay";
+      // Hosted methods leave the site; order placement happens on /cart/payment/return.
       if (hosted && intent?.redirectUrl) {
         window.location.assign(intent.redirectUrl);
         return;
       }
+      // Sandbox / non-redirect hosted path: confirm then submit in-place.
       if (hosted && intent?.paymentIntentId) {
         await checkoutApi.confirmPaymentIntent(activeCartId, {
           paymentIntentId: intent.paymentIntentId,

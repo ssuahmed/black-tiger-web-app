@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Enforce checkout step order using the server summary flags:
+ * empty cart → /cart; shipping needs addressComplete; payment needs shippingComplete.
+ */
+
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { checkoutStepAllowed } from "@/lib/checkout/mapCheckout.mjs";

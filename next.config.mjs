@@ -1,3 +1,11 @@
+/**
+ * Next.js config for the Black Tiger storefront.
+ *
+ * `images.remotePatterns` is built from env hosts so next/image can load Odoo `/web/image/**`
+ * and Commerce `/v1/media/**` assets in both local and deployed environments.
+ * `/homev2` permanently redirects to `/` (home v2 is now the default landing page).
+ */
+
 /** @type {import('next').NextConfig} */
 function mediaRemotePatterns() {
   const patterns = [];

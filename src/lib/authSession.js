@@ -1,3 +1,8 @@
+/**
+ * Short-lived OTP challenge state in `sessionStorage` (survives route changes within the tab,
+ * not full browser restarts). Bridges sign-in → verify-otp → reset-password without URL leakage.
+ */
+
 const CHALLENGE_KEY = "bt_otp_challenge_id";
 const PURPOSE_KEY = "bt_otp_purpose";
 const IDENTIFIER_KEY = "bt_auth_identifier";

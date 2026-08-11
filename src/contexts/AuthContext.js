@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * React auth session provider for the storefront.
+ *
+ * Bootstraps from localStorage (refresh-token rotation when possible), exposes login/OTP/logout
+ * helpers, and wires commerceFetch's session-expired callback so UI state clears with storage.
+ */
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as authApi from "@/lib/api/auth";
 import { setSessionExpiredHandler } from "@/lib/api/client";
@@ -55,6 +62,7 @@ export function AuthProvider({ children }) {
             setUser(null);
           }
         } catch {
+          // Soft fallback: keep a previously stored user if access token still exists.
           if (!alive) return;
           const stored = readStoredUser();
           const access =
@@ -91,6 +99,7 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // Keep React user in sync when commerceFetch clears storage after a failed refresh.
   useEffect(() => {
     setSessionExpiredHandler(() => {
       setUser(null);
@@ -126,6 +135,7 @@ export function AuthProvider({ children }) {
   const verifyOtp = useCallback(
     async (body) => {
       const data = await authApi.verifyOtp(body);
+      // Password-reset OTP returns a resetSessionToken instead of login tokens.
       if (data?.resetSessionToken) {
         return data;
       }

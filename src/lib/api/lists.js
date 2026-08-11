@@ -1,3 +1,8 @@
+/**
+ * Saved lists / wishlist helpers for the Commerce API (`/v1/lists/*`).
+ * `addListToCart` supports an optional Idempotency-Key to avoid duplicate cart lines on retry.
+ */
+
 import { buildQueryString, commerceFetch } from "./client.js";
 
 /** @param {{ page?: number, pageSize?: number, sort?: string }} [params] */

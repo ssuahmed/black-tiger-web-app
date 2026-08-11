@@ -1,5 +1,14 @@
 "use client";
 
+/**
+ * PayTabs hosted-payment return landing page.
+ *
+ * After redirect from the gateway, this client:
+ * 1) Polls payment-intent status (and nudges confirm while still pending)
+ * 2) On success, submits checkout once (module-level lock avoids Strict Mode double-submit)
+ * 3) Clears the local cart and shows the order number
+ */
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import CartOrderSummary from "@/components/cart/CartOrderSummary";
@@ -76,6 +85,7 @@ export default function PaymentReturnPageClient() {
       attempts += 1;
       try {
         let intent = await checkoutApi.getPaymentIntent(activeCartId);
+        // Hosted returns sometimes land before webhook/confirm finishes — ask the API to confirm.
         if (
           intent?.status !== "succeeded" &&
           intent?.status !== "failed" &&
@@ -87,7 +97,7 @@ export default function PaymentReturnPageClient() {
             });
             intent = await checkoutApi.getPaymentIntent(activeCartId);
           } catch {
-            /* still pending */
+            /* still pending — keep polling */
           }
         }
 

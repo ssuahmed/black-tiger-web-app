@@ -1,3 +1,8 @@
+/**
+ * Default shape for the multi-step checkout address form state.
+ * `buildCheckoutAddressPayload` and account address prefills both assume this structure.
+ */
+
 export const EMPTY_ADDRESS_FORM = {
   contact: { email: "", marketingOptIn: true },
   delivery: {

@@ -1,3 +1,8 @@
+/**
+ * Ask AI / product chat client for the Commerce API (`/v1/chat/*`).
+ * Sessions are optional; the UI may send messages without a prior sessionId.
+ */
+
 import { commerceFetch } from "./client.js";
 
 /**

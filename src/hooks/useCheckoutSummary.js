@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Fetch and refresh `GET /checkout/:cartId/summary` for step guards and order totals.
+ */
+
 import { useCallback, useEffect, useState } from "react";
 import { getCheckoutSummary } from "@/lib/api/checkout";
 
