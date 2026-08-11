@@ -132,13 +132,6 @@ export default function AccountCreditsClient() {
         <AccountPageHeader
           title="Credits"
           description="Open a credit account to pay for Black Tiger orders on payment terms."
-          action={
-            !showForm ? (
-              <Button type="button" onClick={() => setShowForm(true)}>
-                Open credit account
-              </Button>
-            ) : null
-          }
         />
         {error ? (
           <Alert variant="error" className="mb-4">
