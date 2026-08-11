@@ -22,7 +22,7 @@ function ArrowRightIcon({ className = "" }) {
   );
 }
 
-/** Header quick action that opens the full-screen Ask AI overlay (desktop). */
+/** Header Ask AI — desktop only; mobile uses the bottom FAB. */
 export default function HeaderAskAiButton() {
   function openAskAi() {
     if (typeof window === "undefined") return;
@@ -33,7 +33,7 @@ export default function HeaderAskAiButton() {
   return (
     <button
       type="button"
-      className="site-header__ask-ai"
+      className="site-header__ask-ai max-lg:!hidden"
       aria-label="Ask AI"
       onClick={openAskAi}
     >

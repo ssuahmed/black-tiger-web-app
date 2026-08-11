@@ -23,27 +23,27 @@ export default function MobileAccountCartFab() {
       role="presentation"
     >
       <div
-        className="pointer-events-auto flex items-center gap-0.5 rounded-2xl border border-neutral-200 bg-white/90 px-2 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] ring-1 ring-neutral-100 backdrop-blur-2xl supports-[backdrop-filter]:bg-white/80"
+        className="mobile-glass-fab pointer-events-auto flex items-center gap-0.5 rounded-2xl px-2 py-2"
         role="toolbar"
         aria-label="Ask AI, account and cart"
       >
-        <Link href={accountHref} className="fab-icon-btn" aria-label={accountLabel} scroll={false}>
-          <Icon name="user" className="fab-icon text-neutral-900" />
-        </Link>
-        <span className="mx-1 h-9 w-px shrink-0 bg-neutral-200" aria-hidden />
         <button
           type="button"
           className="fab-icon-btn gap-1.5 px-2 text-xs font-bold tracking-wide text-primary uppercase"
           aria-label="Ask AI"
           onClick={openAskAi}
         >
-          <Icon name="chat" className="h-5 w-5" />
-          <span>Ask AI</span>
+          <Icon name="chat" className="h-5 w-5 text-primary" />
+          <span className="text-primary">Ask AI</span>
         </button>
-        <span className="mx-1 h-9 w-px shrink-0 bg-neutral-200" aria-hidden />
+        <span className="mobile-glass-fab__rule mx-1 h-9 w-px shrink-0" aria-hidden />
+        <Link href={accountHref} className="fab-icon-btn" aria-label={accountLabel} scroll={false}>
+          <Icon name="user" className="fab-icon text-white" />
+        </Link>
+        <span className="mobile-glass-fab__rule mx-1 h-9 w-px shrink-0" aria-hidden />
         <CartIconLink
           className="fab-icon-btn"
-          iconClassName="fab-icon text-neutral-900"
+          iconClassName="fab-icon text-white"
           badgeClassName="cart-icon-badge cart-icon-badge--fab"
         />
       </div>

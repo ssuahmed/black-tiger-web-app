@@ -16,7 +16,7 @@ export default function SiteHeader() {
         <div className="site-header__brand">
           <Link
             href="/"
-            className="flex-y-center shrink-0 outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="flex-y-center max-w-full outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <BrandLogo variant="header" priority />
           </Link>

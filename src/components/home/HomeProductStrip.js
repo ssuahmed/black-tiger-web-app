@@ -11,10 +11,9 @@ function ProductPanel({ panel }) {
   return (
     <article className="relative box-border h-full min-h-0 overflow-hidden">
       <div
-        className="pointer-events-none absolute inset-0 bg-white bg-no-repeat [background-position:left_bottom] [background-size:102%_103%]"
+        className="pointer-events-none absolute inset-px bg-white bg-no-repeat [background-position:left_bottom] [background-size:102%_103%] sm:[inset:2px_2px_3px_0px]"
         style={{
           backgroundImage: `url(${isQuality ? panel.background : panel.smoke})`,
-          inset: '2px 2px 3px 0px'
         }}
         aria-hidden
       />
