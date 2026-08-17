@@ -12,6 +12,7 @@ export const AUTH_DIAL_CODES = [
   { code: "QA", dial: "+974", label: "Qatar" },
   { code: "OM", dial: "+968", label: "Oman" },
   { code: "EG", dial: "+20", label: "Egypt" },
+  { code: "PK", dial: "+92", label: "Pakistan" },
 ];
 
 export const DEFAULT_DIAL_CODE = "+966";

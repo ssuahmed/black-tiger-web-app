@@ -10,28 +10,37 @@ import { readCartId, writeCartId } from "@/lib/cart/cartStorage";
 export default function CartAuthSync() {
   const { isAuthenticated, ready } = useAuth();
   const { refreshCart } = useCart();
-  const syncingRef = useRef(false);
+  const syncedKeyRef = useRef("");
 
   useEffect(() => {
-    if (!ready || !isAuthenticated || syncingRef.current) return;
+    if (!ready) return;
+    if (!isAuthenticated) {
+      syncedKeyRef.current = "";
+      return;
+    }
 
     const mergeCartId = readCartId();
     if (!mergeCartId) return;
 
+    const syncKey = mergeCartId;
+    if (syncedKeyRef.current === syncKey) return;
+    syncedKeyRef.current = syncKey;
+
     let alive = true;
-    syncingRef.current = true;
 
     createCart({ mergeCartId })
       .then((cart) => {
         if (!alive || !cart?.id) return;
+        if (cart.id !== mergeCartId) {
+          writeCartId(cart.id);
+          syncedKeyRef.current = cart.id;
+        }
         return refreshCart(cart.id);
       })
       .catch(() => {
         if (!alive) return;
+        syncedKeyRef.current = "";
         writeCartId(null);
-      })
-      .finally(() => {
-        syncingRef.current = false;
       });
 
     return () => {

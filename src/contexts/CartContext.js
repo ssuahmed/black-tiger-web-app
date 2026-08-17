@@ -7,7 +7,7 @@
  * so totals/logistics stay consistent across checkout steps.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as cartApi from "@/lib/api/cart";
 import { isCartNotFoundError } from "@/lib/cart/cartErrors";
 import { readCartId, writeCartId } from "@/lib/cart/cartStorage";
@@ -22,9 +22,18 @@ function readStoredCartId() {
 export function CartProvider({ children }) {
   const [cartId, setCartId] = useState(null);
   const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => Boolean(readStoredCartId()));
+  const cartIdRef = useRef(null);
+  const inflightRef = useRef(0);
+
+  const persistCartId = useCallback((cid) => {
+    cartIdRef.current = cid;
+    setCartId(cid);
+    writeCartId(cid);
+  }, []);
 
   const resetCartSession = useCallback(() => {
+    cartIdRef.current = null;
     writeCartId(null);
     setCartId(null);
     setCart(null);
@@ -34,31 +43,30 @@ export function CartProvider({ children }) {
     const created = await cartApi.createCart({});
     const cid = created?.id;
     if (cid) {
-      setCartId(cid);
-      writeCartId(cid);
+      persistCartId(cid);
       setCart(created);
     }
     return cid ?? null;
-  }, []);
+  }, [persistCartId]);
 
   const refreshCart = useCallback(
     async (id) => {
-      const cid = id ?? cartId ?? readStoredCartId();
+      const cid = id ?? cartIdRef.current ?? readStoredCartId();
       if (!cid) {
         setCart(null);
         return null;
       }
-      setLoading(true);
+      inflightRef.current += 1;
+      if (inflightRef.current === 1) setLoading(true);
       try {
         const data = await cartApi.getCart(cid);
+        persistCartId(cid);
         setCart(data);
-        setCartId(cid);
-        writeCartId(cid);
         return data;
       } catch (err) {
         if (isCartNotFoundError(err)) {
           // Only clear storage if this id is still the active one (avoid racing a newer cart).
-          const stillCurrent = readStoredCartId() === cid;
+          const stillCurrent = (cartIdRef.current ?? readStoredCartId()) === cid;
           if (stillCurrent) {
             resetCartSession();
           }
@@ -66,15 +74,16 @@ export function CartProvider({ children }) {
         }
         throw err;
       } finally {
-        setLoading(false);
+        inflightRef.current = Math.max(0, inflightRef.current - 1);
+        if (inflightRef.current === 0) setLoading(false);
       }
     },
-    [cartId, resetCartSession],
+    [persistCartId, resetCartSession],
   );
 
   /** Ensure a usable cart id exists (create if missing/stale). */
   const ensureCart = useCallback(async () => {
-    let cid = cartId ?? readStoredCartId();
+    const cid = cartIdRef.current ?? readStoredCartId();
     if (!cid) {
       return createNewCart();
     }
@@ -83,7 +92,7 @@ export function CartProvider({ children }) {
       return createNewCart();
     }
     return cid;
-  }, [cartId, refreshCart, createNewCart]);
+  }, [refreshCart, createNewCart]);
 
   const addLine = useCallback(
     async (line) => {
@@ -108,7 +117,7 @@ export function CartProvider({ children }) {
 
   const updateLine = useCallback(
     async (lineId, patch) => {
-      const cid = cartId ?? readCartId();
+      const cid = cartIdRef.current ?? readCartId();
       if (!cid) return null;
       try {
         await cartApi.updateCartItem(cid, lineId, patch);
@@ -119,12 +128,12 @@ export function CartProvider({ children }) {
         return null;
       }
     },
-    [cartId, refreshCart, resetCartSession],
+    [refreshCart, resetCartSession],
   );
 
   const removeLine = useCallback(
     async (lineId) => {
-      const cid = cartId ?? readCartId();
+      const cid = cartIdRef.current ?? readCartId();
       if (!cid) return null;
       try {
         await cartApi.removeCartItem(cid, lineId);
@@ -135,11 +144,11 @@ export function CartProvider({ children }) {
         return null;
       }
     },
-    [cartId, refreshCart, resetCartSession],
+    [refreshCart, resetCartSession],
   );
 
   const clearCart = useCallback(async () => {
-    const cid = cartId ?? readCartId();
+    const cid = cartIdRef.current ?? readCartId();
     if (cid) {
       try {
         await cartApi.deleteCart(cid);
@@ -148,15 +157,19 @@ export function CartProvider({ children }) {
       }
     }
     resetCartSession();
-  }, [cartId, resetCartSession]);
+  }, [resetCartSession]);
 
   useEffect(() => {
     const cid = readCartId();
-    if (!cid) return;
+    if (!cid) {
+      setLoading(false);
+      return;
+    }
+    cartIdRef.current = cid;
     setCartId(cid);
     refreshCart(cid).catch((err) => {
       if (!isCartNotFoundError(err)) return;
-      if (readCartId() === cid) {
+      if ((cartIdRef.current ?? readCartId()) === cid) {
         resetCartSession();
       }
     });
