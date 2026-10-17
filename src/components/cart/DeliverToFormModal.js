@@ -14,6 +14,7 @@ const COUNTRIES = [
   { code: "BH", name: "Bahrain", phone: "+973" },
   { code: "KW", name: "Kuwait", phone: "+965" },
   { code: "OM", name: "Oman", phone: "+968" },
+  { code: "PK", name: "Pakistan", phone: "+92" },
   { code: "US", name: "United States", phone: "+1" },
   { code: "GB", name: "United Kingdom", phone: "+44" },
 ];

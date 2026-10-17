@@ -288,6 +288,7 @@ function countryName(code) {
   if (code === "BH") return "Bahrain";
   if (code === "KW") return "Kuwait";
   if (code === "OM") return "Oman";
+  if (code === "PK") return "Pakistan";
   if (code === "US") return "United States";
   if (code === "GB") return "United Kingdom";
   return code || "";

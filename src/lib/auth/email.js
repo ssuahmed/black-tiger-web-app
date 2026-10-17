@@ -15,6 +15,7 @@ const DIAL_NATIONAL_LENGTH = {
   "+974": 8, // QA
   "+968": 8, // OM
   "+20": 10, // EG
+  "+92": 10, // PK mobile 3xxxxxxxxx
 };
 
 /**
