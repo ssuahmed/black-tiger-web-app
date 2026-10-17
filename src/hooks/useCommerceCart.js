@@ -17,6 +17,12 @@ export function useCommerceCart(opts = {}) {
 
   useEffect(() => {
     let alive = true;
+    if (cart) {
+      setReady(true);
+      return () => {
+        alive = false;
+      };
+    }
     ensureCart()
       .catch(() => {})
       .finally(() => {
@@ -25,7 +31,7 @@ export function useCommerceCart(opts = {}) {
     return () => {
       alive = false;
     };
-  }, [ensureCart]);
+  }, [cart, ensureCart]);
 
   const lines = useMemo(() => {
     const items = Array.isArray(cart?.items) ? cart.items : [];
@@ -57,7 +63,7 @@ export function useCommerceCart(opts = {}) {
     totals,
     logistics,
     promo,
-    ready: ready && !loading,
+    ready,
     loading,
     isEmpty: lines.length === 0,
     updateQuantity,
